@@ -4,8 +4,8 @@ services:
     container_name: prestacontrol-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 1234
-      MYSQL_DATABASE: prestacontrol_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
       - "3306:3306"
     volumes:
@@ -23,8 +23,9 @@ services:
     container_name: prestacontrol-api
     restart: always
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=prestacontrol_db;User=root;Password=1234;
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=${MYSQL_DATABASE};User=root;Password=${MYSQL_ROOT_PASSWORD};
+      - Telegram__BotToken=${TELEGRAM_BOT_TOKEN}
+      - Telegram__AdminChatId=${TELEGRAM_ADMIN_CHAT_ID}
     ports:
       - "5112:8080"
     depends_on:
@@ -35,6 +36,8 @@ services:
     build:
       context: ./prestacontrol-pwa
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     container_name: prestacontrol-pwa
     restart: always
     ports:
