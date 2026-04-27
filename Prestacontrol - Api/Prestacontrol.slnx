@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Prestacontrol.API/Prestacontrol.API.csproj" />
+  <Project Path="Prestacontrol.Application/Prestacontrol.Application.csproj" />
+  <Project Path="Prestacontrol.Domain/Prestacontrol.Domain.csproj" />
+  <Project Path="Prestacontrol.Infrastructure/Prestacontrol.Infrastructure.csproj" />
+</Solution>
