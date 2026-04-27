@@ -9,7 +9,7 @@ RUN npm install --legacy-peer-deps
 # Build the application
 COPY . .
 ARG VITE_API_URL
-ENV VITE_API_URL=http://prestacontrol.apolanco.com/api
+ENV VITE_API_URL=https://prestacontrolapi.apolanco.com/api
 RUN npm run build
 
 # Stage 2: Serve the application with Nginx
