@@ -22,6 +22,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
 // EF Core & MySQL
@@ -118,7 +120,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled for Docker/Proxy compatibility
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
