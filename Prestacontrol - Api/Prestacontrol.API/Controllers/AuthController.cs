@@ -14,6 +14,21 @@ namespace Prestacontrol.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            if (request == null) 
+            {
+                Console.WriteLine("DEBUG: LoginRequest is NULL");
+                return BadRequest(new { message = "Cuerpo de petición nulo" });
+            }
+            
+            Console.WriteLine($"DEBUG: Login attempt for user: {request.Username}");
+
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                Console.WriteLine($"DEBUG: ModelState Invalid: {errors}");
+                return BadRequest(new { message = "Error de validación", errors });
+            }
+
             var response = await _authService.LoginAsync(request);
             if (response == null) return Unauthorized(new { message = "Credenciales inválidas" });
             return Ok(response);
