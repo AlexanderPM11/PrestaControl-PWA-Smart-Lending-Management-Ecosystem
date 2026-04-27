@@ -23,6 +23,7 @@ services:
     container_name: prestacontrol-api
     restart: always
     environment:
+      - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=db;Database=${MYSQL_DATABASE};User=root;Password=${MYSQL_ROOT_PASSWORD};
       - Telegram__BotToken=${TELEGRAM_BOT_TOKEN}
       - Telegram__AdminChatId=${TELEGRAM_ADMIN_CHAT_ID}

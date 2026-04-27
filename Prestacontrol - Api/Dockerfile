@@ -22,7 +22,7 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Environment variables for the container
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Prestacontrol.API.dll"]
