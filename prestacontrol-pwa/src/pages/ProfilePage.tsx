@@ -3,6 +3,7 @@ import { UserCircle2, KeyRound, LogOut, CloudBackup, Check, Link2, Unlink, Uploa
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../api/api';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 const ProfilePage: React.FC = () => {
   const { user, logout, login } = useAuth();
@@ -20,6 +21,8 @@ const ProfilePage: React.FC = () => {
   const [googleConfigured, setGoogleConfigured] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [isRestoringBackup, setIsRestoringBackup] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [selectedBackupFile, setSelectedBackupFile] = useState<File | null>(null);
   const backupFileRef = useRef<HTMLInputElement>(null);
   const [isUpdatingBackup, setIsUpdatingBackup] = useState(false);
 
@@ -51,16 +54,17 @@ const ProfilePage: React.FC = () => {
     } catch { toast.error('No se pudo desconectar Google Drive.'); }
   };
 
-  const restoreBackup = async (file: File) => {
-    if (!window.confirm('Esta acción reemplazará la información actual por la del backup. ¿Deseas continuar?')) return;
+  const restoreBackup = async () => {
+    if (!selectedBackupFile) return;
+    setRestoreDialogOpen(false);
     try {
       setIsRestoringBackup(true);
-      const formData = new FormData(); formData.append('backup', file);
+      const formData = new FormData(); formData.append('backup', selectedBackupFile);
       await api.post('/backups/restore', formData);
       toast.success('Backup restaurado correctamente.');
       setTimeout(() => window.location.reload(), 1000);
     } catch (err: any) { toast.error(err.response?.data?.message || 'No se pudo restaurar el backup.'); }
-    finally { setIsRestoringBackup(false); if (backupFileRef.current) backupFileRef.current.value = ''; }
+    finally { setIsRestoringBackup(false); setSelectedBackupFile(null); if (backupFileRef.current) backupFileRef.current.value = ''; }
   };
 
   const toggleBackups = async () => {
@@ -171,7 +175,7 @@ const ProfilePage: React.FC = () => {
         <div className="mt-5 border-t border-sage-100 pt-4">
           <p className="text-xs font-black uppercase tracking-widest text-sage-500">Restaurar información</p>
           <p className="mt-1 text-xs font-medium text-sage-500">Carga un backup .pca para recuperar la base de datos completa.</p>
-          <input ref={backupFileRef} type="file" accept=".pca" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void restoreBackup(file); }} />
+          <input ref={backupFileRef} type="file" accept=".pca" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setSelectedBackupFile(file); setRestoreDialogOpen(true); } }} />
           <button type="button" onClick={() => backupFileRef.current?.click()} disabled={isRestoringBackup} className="mt-3 w-full rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 font-black text-sage-700 transition hover:bg-sage-100 disabled:opacity-50"><Upload size={17} className="mr-2 inline" />{isRestoringBackup ? 'Restaurando…' : 'Cargar y restaurar backup'}</button>
         </div>
       </div>
@@ -226,6 +230,17 @@ const ProfilePage: React.FC = () => {
           <LogOut size={20} /> Cerrar Sesión
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={restoreDialogOpen}
+        type="warning"
+        title="Restaurar backup"
+        message="Esta acción reemplazará toda la información actual por los datos del backup seleccionado. ¿Deseas continuar?"
+        confirmText="Sí, restaurar"
+        cancelText="Cancelar"
+        onConfirm={() => void restoreBackup()}
+        onCancel={() => { setRestoreDialogOpen(false); setSelectedBackupFile(null); if (backupFileRef.current) backupFileRef.current.value = ''; }}
+      />
     </div>
   );
 };
