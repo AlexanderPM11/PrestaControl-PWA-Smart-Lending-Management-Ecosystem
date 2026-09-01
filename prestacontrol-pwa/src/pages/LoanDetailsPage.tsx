@@ -133,11 +133,6 @@ const LoanDetailsPage: React.FC = () => {
           <p className="text-[10px] font-bold text-sage-400 font-sans mt-1">Capital inicial</p>
         </div>
         
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-sage-100">
-          <p className="text-[10px] font-black uppercase tracking-widest text-sage-400 font-sans mb-1">Total a Pagar</p>
-          <p className="text-2xl font-black text-financial-green font-display">${loan.totalToPay.toLocaleString()}</p>
-          <p className="text-[10px] font-bold text-sage-400 font-sans mt-1">Incluye intereses ({loan.interestRate}%)</p>
-        </div>
 
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-sage-100">
           <p className="text-[10px] font-black uppercase tracking-widest text-sage-400 font-sans mb-1">Total Pagado</p>
@@ -147,6 +142,26 @@ const LoanDetailsPage: React.FC = () => {
               className="bg-financial-green h-full transition-all duration-1000" 
               style={{ width: `${Math.min(100, progress)}%` }}
             />
+          </div>
+        </div>
+
+        <div className="bg-tangerine-500 p-6 rounded-3xl shadow-lg shadow-tangerine-500/20 relative overflow-hidden text-white border border-tangerine-600/30">
+          <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-tangerine-100 font-sans mb-1">Saldo Pendiente</p>
+          <p className="text-3xl font-black font-display">${loan.balanceDue.toLocaleString()}</p>
+          <div className="w-full bg-tangerine-600 h-1.5 rounded-full mt-3 overflow-hidden">
+            <div 
+              className="bg-white h-full transition-all duration-1000" 
+              style={{ width: `${Math.max(0.5, progress)}%` }}
+            />
+          </div>
+          <div className="mt-4 flex items-center justify-between font-sans">
+            <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-white text-tangerine-600`}>
+              {loan.status === 'Cancelled' ? 'Anulado' : loan.status === 'Paid' ? 'Completado' : loan.status === 'Overdue' ? 'En Mora' : 'Activo'}
+            </span>
+            <p className="text-[10px] font-black text-white tracking-widest uppercase">
+              {progress > 0 && progress < 1 ? progress.toFixed(2) : Math.round(progress)}% PAGADO
+            </p>
           </div>
         </div>
       </div>
@@ -201,12 +216,12 @@ const LoanDetailsPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  
-                  <div className="flex justify-between items-center text-xs bg-white/50 p-2 rounded-lg border border-sage-100 mt-1">
-                    <p className="text-sage-600 font-medium">Capital: <span className="font-bold text-sage-900">${(payment.capitalAmount || 0).toLocaleString()}</span></p>
-                    <p className="text-sage-600 font-medium">Interés: <span className="font-bold text-tangerine-600">${(payment.interestAmount || 0).toLocaleString()}</span></p>
+                  <div className="flex justify-between items-center mt-1">
+                    <div className="flex justify-between items-center text-xs bg-white/50 p-2 rounded-lg border border-sage-100 mt-1 w-full mr-2">
+                      <p className="text-sage-600 font-medium">Capital: <span className="font-bold text-sage-900">${(payment.capitalAmount || 0).toLocaleString()}</span></p>
+                      <p className="text-sage-600 font-medium">Interés: <span className="font-bold text-tangerine-600">${(payment.interestAmount || 0).toLocaleString()}</span></p>
+                    </div>
                   </div>
-
                   <div className="flex justify-between items-center mt-1">
                     <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-white text-sage-600 rounded-lg">
                       <CreditCard size={10} /> {payment.paymentMethod}

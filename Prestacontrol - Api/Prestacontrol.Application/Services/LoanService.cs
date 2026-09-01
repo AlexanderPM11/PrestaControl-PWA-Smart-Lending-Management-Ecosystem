@@ -141,8 +141,8 @@ namespace Prestacontrol.Application.Services
             
             foreach (var dto in dtos)
             {
-                dto.CapitalAmount = transactions.Where(t => t.PaymentId == dto.Id && t.Type == "Capital").Sum(t => t.Amount);
                 dto.InterestAmount = transactions.Where(t => t.PaymentId == dto.Id && t.Type == "Interés").Sum(t => t.Amount);
+                dto.CapitalAmount = dto.Amount - dto.InterestAmount;
             }
             
             return dtos;

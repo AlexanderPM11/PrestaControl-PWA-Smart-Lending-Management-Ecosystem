@@ -38,6 +38,8 @@ namespace Prestacontrol.Application.Services
             // 2. Process Capital & Installments
             if (remainingCapital > 0)
             {
+                transactions.Add(CreateTransaction(loan.Id, userId, request.CapitalAmount, "Capital", "Abono a capital"));
+
                 var pendingInstallments = loan.Installments
                     .Where(i => i.Status != InstallmentStatus.Paid)
                     .OrderBy(i => i.DueDate)
