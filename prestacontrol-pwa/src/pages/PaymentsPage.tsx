@@ -10,6 +10,7 @@ const PaymentsPage: React.FC = () => {
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
   const [capitalAmount, setCapitalAmount] = useState<string>('');
   const [interestAmount, setInterestAmount] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('Efectivo');
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -60,7 +61,7 @@ const PaymentsPage: React.FC = () => {
         loanId: selectedLoan.id,
         capitalAmount: numCapital,
         interestAmount: numInterest,
-        paymentMethod: 'Efectivo',
+        paymentMethod,
         notes: notes.trim() || null
       });
       setTransactions(response.data);
@@ -68,6 +69,7 @@ const PaymentsPage: React.FC = () => {
       fetchPendingLoans();
       setCapitalAmount('');
       setInterestAmount('');
+      setPaymentMethod('Efectivo');
       setNotes('');
       toast.success('Pago procesado correctamente');
     } catch (err) {
@@ -234,11 +236,30 @@ const PaymentsPage: React.FC = () => {
                 </button>
               </div>
               
-              <div className="p-4 bg-sage-50 rounded-2xl flex gap-3 items-start border border-sage-100">
+               <div className="p-4 bg-sage-50 rounded-2xl flex gap-3 items-start border border-sage-100">
                 <Info className="text-sage-500 shrink-0 mt-0.5" size={18} />
                 <p className="text-xs text-sage-600 leading-relaxed font-medium">
                   El abono a capital descontará directamente del préstamo. El pago de interés no reduce el saldo de la deuda.
                 </p>
+               </div>
+
+              <div>
+                <label htmlFor="payment-method" className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-2 ml-1">
+                  Tipo de pago
+                </label>
+                <select
+                  id="payment-method"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="input-field w-full appearance-none cursor-pointer font-bold text-sage-900"
+                >
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia bancaria">Transferencia bancaria</option>
+                  <option value="Depósito bancario">Depósito bancario</option>
+                  <option value="Tarjeta">Tarjeta</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Otro">Otro</option>
+                </select>
               </div>
 
               <div>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Edit3, DollarSign, History, Clock, List, CreditCard } from 'lucide-react';
+import { ChevronLeft, Edit3, DollarSign, History, Clock, List, CreditCard, Share2, FileDown } from 'lucide-react';
 import api from '../api/api';
 import { useToast } from '../context/ToastContext';
+import { createLoanPdf } from '../utils/loanPdf';
 
 const LoanDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ const LoanDetailsPage: React.FC = () => {
   const [editInterest, setEditInterest] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -73,6 +75,47 @@ const LoanDetailsPage: React.FC = () => {
     }
   };
 
+  const handleSharePdf = async () => {
+    if (!loan || isGeneratingPdf) return;
+    try {
+      setIsGeneratingPdf(true);
+      const file = createLoanPdf({ loan, payments });
+      const shareData = {
+        files: [file],
+        title: `Préstamo #${String(loan.id).padStart(4, '0')}`,
+        text: `Detalle del préstamo de ${loan.clientName}`
+      };
+      const canShareFile = typeof navigator !== 'undefined'
+        && typeof navigator.share === 'function'
+        && (!navigator.canShare || navigator.canShare({ files: [file] }));
+
+      if (canShareFile) {
+        try {
+          await navigator.share(shareData);
+          toast.success('PDF listo para compartir');
+          return;
+        } catch (shareError: any) {
+          if (shareError?.name === 'AbortError') return;
+        }
+      }
+
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success('PDF descargado correctamente');
+    } catch (error) {
+      console.error('Error generando PDF del préstamo:', error);
+      toast.error('No se pudo generar el PDF del préstamo.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -109,7 +152,7 @@ const LoanDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <button 
           onClick={() => navigate(`/loans/edit/${loan.id}`)}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white border border-sage-200 hover:bg-sage-50 text-sage-700 rounded-2xl font-bold transition-all shadow-sm font-sans"
@@ -124,6 +167,14 @@ const LoanDetailsPage: React.FC = () => {
             <DollarSign size={18} /> Cobrar
           </button>
         )}
+        <button
+          onClick={handleSharePdf}
+          disabled={isGeneratingPdf}
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-sage-900 hover:bg-sage-800 disabled:opacity-60 text-white rounded-2xl font-black shadow-lg shadow-sage-900/20 transition-all active:scale-95 font-sans"
+        >
+          {isGeneratingPdf ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Share2 size={18} />}
+          {isGeneratingPdf ? 'Preparando PDF...' : 'Compartir detalle en PDF'}
+        </button>
       </div>
 
       {/* Cards */}
