@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using System.Net;
 using System.Text;
+using System.Diagnostics;
+using System.Security.Cryptography;
 using Prestacontrol.Infrastructure.Persistence;
 
 namespace Prestacontrol.API.Controllers;
@@ -120,6 +122,38 @@ public sealed class BackupsController : ControllerBase
         return Ok(new { connected = false });
     }
 
+    [HttpPost("restore")]
+    [RequestFormLimits(MultipartBodyLengthLimit = 1024L * 1024L * 1024L)]
+    public async Task<IActionResult> Restore([FromForm] IFormFile? backup, CancellationToken cancellationToken)
+    {
+        if (backup == null || backup.Length == 0) return BadRequest(new { message = "Selecciona un archivo de backup." });
+        if (backup.Length > 1024L * 1024L * 1024L || !backup.FileName.EndsWith(".pca", StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { message = "El archivo debe ser un backup .pca válido de PrestaControl." });
+
+        var temp = Path.Combine(Path.GetTempPath(), "prestacontrol-restore", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temp);
+        var encrypted = Path.Combine(temp, "backup.pca");
+        var archive = Path.Combine(temp, "backup.tar.gz");
+        var dump = Path.Combine(temp, "database.sql");
+        try
+        {
+            await using (var destination = System.IO.File.Create(encrypted)) await backup.CopyToAsync(destination, cancellationToken);
+            await DecryptFile(encrypted, archive, Get("BACKUP_ENCRYPTION_PASSWORD") ?? string.Empty, cancellationToken);
+            await ExtractDatabaseDump(archive, dump, cancellationToken);
+            await ImportDatabase(dump, cancellationToken);
+            return Ok(new { message = "La base de datos fue restaurada correctamente desde el backup." });
+        }
+        catch (CryptographicException) { return BadRequest(new { message = "No se pudo descifrar el backup. Verifica la contraseña configurada." }); }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = $"No se pudo restaurar el backup: {ex.Message}" });
+        }
+        finally
+        {
+            try { if (Directory.Exists(temp)) Directory.Delete(temp, true); } catch { }
+        }
+    }
+
     [HttpPut("settings")]
     public async Task<IActionResult> UpdateSettings([FromBody] BackupSettingsRequest request)
     {
@@ -142,6 +176,45 @@ public sealed class BackupsController : ControllerBase
         try { return Encoding.UTF8.GetString(Convert.FromBase64String(value.Replace('-', '+').Replace('_', '/') + new string('=', (4 - value.Length % 4) % 4))); }
         catch { return string.Empty; }
     }
+
+    private async Task DecryptFile(string input, string output, string password, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(password)) throw new InvalidOperationException("BACKUP_ENCRYPTION_PASSWORD no está configurada.");
+        await using var source = System.IO.File.OpenRead(input);
+        var magic = new byte[4]; await source.ReadExactlyAsync(magic, cancellationToken);
+        if (Encoding.ASCII.GetString(magic) != "PCA1") throw new CryptographicException("Formato de backup no reconocido.");
+        var salt = new byte[32]; var iv = new byte[16]; await source.ReadExactlyAsync(salt, cancellationToken); await source.ReadExactlyAsync(iv, cancellationToken);
+        using var key = new Rfc2898DeriveBytes(password, salt, 600_000, HashAlgorithmName.SHA256);
+        using var aes = Aes.Create(); aes.Key = key.GetBytes(32); aes.IV = iv; aes.Mode = CipherMode.CBC; aes.Padding = PaddingMode.PKCS7;
+        await using var crypto = new CryptoStream(source, aes.CreateDecryptor(), CryptoStreamMode.Read);
+        await using var destination = System.IO.File.Create(output); await crypto.CopyToAsync(destination, cancellationToken);
+    }
+
+    private static async Task ExtractDatabaseDump(string archive, string dump, CancellationToken cancellationToken)
+    {
+        var process = Process.Start(new ProcessStartInfo("tar", $"-xOzf {Quote(archive)} database.sql") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true }) ?? throw new InvalidOperationException("No se pudo abrir el archivo de backup.");
+        await using (var output = System.IO.File.Create(dump)) await process.StandardOutput.BaseStream.CopyToAsync(output, cancellationToken);
+        var error = await process.StandardError.ReadToEndAsync(cancellationToken); await process.WaitForExitAsync(cancellationToken);
+        if (process.ExitCode != 0) throw new InvalidOperationException($"El backup no contiene un volcado válido: {error}");
+    }
+
+    private async Task ImportDatabase(string dump, CancellationToken cancellationToken)
+    {
+        var host = Get("BACKUP_DB_HOST", "db") ?? "db";
+        var port = Get("BACKUP_DB_PORT", "3306") ?? "3306";
+        var user = Get("BACKUP_DB_USER", "root") ?? "root";
+        var database = Get("BACKUP_DB_NAME") ?? throw new InvalidOperationException("BACKUP_DB_NAME no está configurada.");
+        var psi = new ProcessStartInfo("mysql", $"-h {Quote(host)} -P {port} -u {Quote(user)} {Quote(database)}")
+        { RedirectStandardError = true, RedirectStandardInput = true, UseShellExecute = false, CreateNoWindow = true };
+        psi.Environment["MYSQL_PWD"] = Get("BACKUP_DB_PASSWORD", Get("MYSQL_ROOT_PASSWORD")) ?? string.Empty;
+        using var process = Process.Start(psi) ?? throw new InvalidOperationException("No se pudo iniciar la restauración de MySQL.");
+        await using (var input = System.IO.File.OpenRead(dump)) await input.CopyToAsync(process.StandardInput.BaseStream, cancellationToken);
+        await process.StandardInput.BaseStream.FlushAsync(cancellationToken); process.StandardInput.Close();
+        var error = await process.StandardError.ReadToEndAsync(cancellationToken); await process.WaitForExitAsync(cancellationToken);
+        if (process.ExitCode != 0) throw new InvalidOperationException($"MySQL rechazó la restauración: {error}");
+    }
+
+    private static string Quote(string value) => $"\"{value.Replace("\"", "\\\"")}\"";
 }
 
 public sealed class BackupSettingsRequest

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { UserCircle2, KeyRound, LogOut, CloudBackup, Check, Link2, Unlink } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { UserCircle2, KeyRound, LogOut, CloudBackup, Check, Link2, Unlink, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../api/api';
@@ -19,6 +19,8 @@ const ProfilePage: React.FC = () => {
   const [backupConfigured, setBackupConfigured] = useState(false);
   const [googleConfigured, setGoogleConfigured] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [isRestoringBackup, setIsRestoringBackup] = useState(false);
+  const backupFileRef = useRef<HTMLInputElement>(null);
   const [isUpdatingBackup, setIsUpdatingBackup] = useState(false);
 
   React.useEffect(() => {
@@ -47,6 +49,18 @@ const ProfilePage: React.FC = () => {
       setBackupEnabled(false);
       toast.success('Google Drive desconectado.');
     } catch { toast.error('No se pudo desconectar Google Drive.'); }
+  };
+
+  const restoreBackup = async (file: File) => {
+    if (!window.confirm('Esta acción reemplazará la información actual por la del backup. ¿Deseas continuar?')) return;
+    try {
+      setIsRestoringBackup(true);
+      const formData = new FormData(); formData.append('backup', file);
+      await api.post('/backups/restore', formData);
+      toast.success('Backup restaurado correctamente.');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err: any) { toast.error(err.response?.data?.message || 'No se pudo restaurar el backup.'); }
+    finally { setIsRestoringBackup(false); if (backupFileRef.current) backupFileRef.current.value = ''; }
   };
 
   const toggleBackups = async () => {
@@ -154,6 +168,12 @@ const ProfilePage: React.FC = () => {
           <div className="mt-4 flex items-center gap-2 rounded-2xl bg-sage-50 px-3 py-2 text-xs font-bold text-sage-600"><Check size={15} />{backupEnabled ? 'Activo. Se ejecutará según el horario configurado.' : 'Cuenta conectada, pero backups desactivados.'}</div>
           <button type="button" onClick={disconnectGoogleDrive} className="mt-3 text-xs font-bold text-sage-500 hover:text-red-600"><Unlink size={14} className="mr-1 inline" />Desconectar Google Drive</button>
         </>}
+        <div className="mt-5 border-t border-sage-100 pt-4">
+          <p className="text-xs font-black uppercase tracking-widest text-sage-500">Restaurar información</p>
+          <p className="mt-1 text-xs font-medium text-sage-500">Carga un backup .pca para recuperar la base de datos completa.</p>
+          <input ref={backupFileRef} type="file" accept=".pca" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void restoreBackup(file); }} />
+          <button type="button" onClick={() => backupFileRef.current?.click()} disabled={isRestoringBackup} className="mt-3 w-full rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 font-black text-sage-700 transition hover:bg-sage-100 disabled:opacity-50"><Upload size={17} className="mr-2 inline" />{isRestoringBackup ? 'Restaurando…' : 'Cargar y restaurar backup'}</button>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
