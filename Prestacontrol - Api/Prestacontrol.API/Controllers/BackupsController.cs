@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using System.Net;
+using System.Text;
 using Prestacontrol.Infrastructure.Persistence;
 
 namespace Prestacontrol.API.Controllers;
@@ -44,14 +45,20 @@ public sealed class BackupsController : ControllerBase
     public async Task<IActionResult> ConnectGoogle()
     {
         var clientId = Get("BACKUP_GOOGLE_CLIENT_ID");
-        var redirectUri = Get("BACKUP_GOOGLE_REDIRECT_URI", "https://prestacontrol.apolanco.com/api/backups/google/callback");
+        var origin = Request.Headers.Origin.FirstOrDefault();
+        var isLocal = Uri.TryCreate(origin, UriKind.Absolute, out var originUri)
+            && (originUri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || originUri.Host.Equals("127.0.0.1"));
+        var redirectUri = isLocal
+            ? $"{originUri!.GetLeftPart(UriPartial.Authority)}/api/backups/google/callback"
+            : Get("BACKUP_GOOGLE_REDIRECT_URI", "https://prestacontrol.apolanco.com/api/backups/google/callback");
+        var returnUrl = isLocal ? $"{originUri!.GetLeftPart(UriPartial.Authority)}/profile" : "https://prestacontrol.apolanco.com/profile";
         if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(Get("BACKUP_GOOGLE_CLIENT_SECRET")))
             return BadRequest(new { message = "Google Drive no está configurado en el entorno." });
 
         var state = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
         var stateConfig = await _context.SystemConfigs.FindAsync("Backups.GoogleOAuthState")
             ?? new Domain.Entities.SystemConfig { Key = "Backups.GoogleOAuthState" };
-        stateConfig.Value = $"{state}|{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+        stateConfig.Value = $"{state}|{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}|{Encode(redirectUri!)}|{Encode(returnUrl)}";
         stateConfig.UpdatedAt = DateTime.UtcNow;
         if (_context.Entry(stateConfig).State == EntityState.Detached) await _context.SystemConfigs.AddAsync(stateConfig);
         await _context.SaveChangesAsync();
@@ -76,16 +83,20 @@ public sealed class BackupsController : ControllerBase
         var redirectBack = "/profile?backup=";
         if (!string.IsNullOrWhiteSpace(error)) return Redirect(redirectBack + "denied");
         var stored = await _context.SystemConfigs.FindAsync("Backups.GoogleOAuthState");
-        var parts = stored?.Value?.Split('|', 2);
-        if (string.IsNullOrWhiteSpace(code) || parts?.Length != 2 || parts[0] != state || !long.TryParse(parts[1], out var issuedAt) || DateTimeOffset.UtcNow.ToUnixTimeSeconds() - issuedAt > 600)
-            return Redirect(redirectBack + "invalid");
+        var parts = stored?.Value?.Split('|', 4);
+        if (string.IsNullOrWhiteSpace(code) || parts?.Length != 4 || parts[0] != state || !long.TryParse(parts[1], out var issuedAt) || DateTimeOffset.UtcNow.ToUnixTimeSeconds() - issuedAt > 600)
+            return Redirect("https://prestacontrol.apolanco.com/profile?backup=invalid");
+        var callbackUri = Decode(parts[2]);
+        var returnUrl = Decode(parts[3]);
+        if (string.IsNullOrWhiteSpace(callbackUri) || string.IsNullOrWhiteSpace(returnUrl)) return Redirect("https://prestacontrol.apolanco.com/profile?backup=invalid");
+        redirectBack = $"{returnUrl}?backup=";
 
         using var response = await _httpClientFactory.CreateClient().PostAsync("https://oauth2.googleapis.com/token", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["code"] = code,
             ["client_id"] = Get("BACKUP_GOOGLE_CLIENT_ID")!,
             ["client_secret"] = Get("BACKUP_GOOGLE_CLIENT_SECRET")!,
-            ["redirect_uri"] = Get("BACKUP_GOOGLE_REDIRECT_URI", "https://prestacontrol.apolanco.com/api/backups/google/callback")!,
+            ["redirect_uri"] = callbackUri,
             ["grant_type"] = "authorization_code"
         }));
         if (!response.IsSuccessStatusCode) return Redirect(redirectBack + "error");
@@ -125,6 +136,12 @@ public sealed class BackupsController : ControllerBase
     }
 
     private string? Get(string key, string? fallback = null) => Environment.GetEnvironmentVariable(key) ?? _configuration[key] ?? fallback;
+    private static string Encode(string value) => Convert.ToBase64String(Encoding.UTF8.GetBytes(value)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    private static string Decode(string value)
+    {
+        try { return Encoding.UTF8.GetString(Convert.FromBase64String(value.Replace('-', '+').Replace('_', '/') + new string('=', (4 - value.Length % 4) % 4))); }
+        catch { return string.Empty; }
+    }
 }
 
 public sealed class BackupSettingsRequest
