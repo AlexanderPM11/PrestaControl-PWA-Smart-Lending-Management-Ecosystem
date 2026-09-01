@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
 import api from '../api/api';
+import { useToast } from '../context/ToastContext';
 
 const DelinquentLoansPage: React.FC = () => {
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     fetchDelinquentLoans();
@@ -18,6 +20,7 @@ const DelinquentLoansPage: React.FC = () => {
       setLoans(response.data);
     } catch (err) {
       console.error('Error fetching delinquent loans:', err);
+      toast.error('Error al cargar la lista de morosos');
     } finally {
       setLoading(false);
     }

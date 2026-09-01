@@ -4,6 +4,7 @@ import { ArrowLeft, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/api';
 import LoanSimulator from '../components/loans/LoanSimulator';
+import { useToast } from '../context/ToastContext';
 
 const EditLoanPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,8 +14,8 @@ const EditLoanPage: React.FC = () => {
   const [hasPayments, setHasPayments] = useState(false);
   const [simulationData, setSimulationData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   useEffect(() => {
     const fetchLoan = async () => {
@@ -39,7 +40,7 @@ const EditLoanPage: React.FC = () => {
         });
 
       } catch (err: any) {
-        setError('Error cargando el préstamo.');
+        toast.error('Error cargando el préstamo.');
       } finally {
         setLoading(false);
       }
@@ -50,14 +51,13 @@ const EditLoanPage: React.FC = () => {
 
   const handleUpdateLoan = async () => {
     if (!clientName.trim()) {
-      setError('Debes ingresar el nombre del cliente.');
+      toast.error('Debes ingresar el nombre del cliente.');
       return;
     }
     
     if (!hasPayments && !simulationData) return;
 
     setIsSubmitting(true);
-    setError('');
 
     try {
       const payload = hasPayments ? {
@@ -79,9 +79,10 @@ const EditLoanPage: React.FC = () => {
       };
 
       await api.put(`/loans/${id}`, payload);
+      toast.success('Préstamo actualizado exitosamente.');
       navigate(`/loans/details/${id}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al actualizar el préstamo.');
+      toast.error(err.response?.data?.message || 'Error al actualizar el préstamo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -112,19 +113,6 @@ const EditLoanPage: React.FC = () => {
           </p>
         </div>
       </div>
-
-      {error && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm flex items-center gap-2 font-sans"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {error}
-        </motion.div>
-      )}
 
       {/* Client Input */}
       <div className="bg-white rounded-[32px] p-6 border border-sage-100 shadow-sm space-y-4">

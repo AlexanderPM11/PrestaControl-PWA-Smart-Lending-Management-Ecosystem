@@ -20,6 +20,8 @@ namespace Prestacontrol.Application.Services
 
         public async Task<LoanDto> CreateLoanAsync(CreateLoanRequest request, int userId)
         {
+            var localStartDate = request.StartDate.Kind == DateTimeKind.Utc ? request.StartDate.AddHours(-4) : request.StartDate;
+
             decimal totalInterest = request.Amount * (request.InterestRate / 100);
             decimal totalToPay = request.Amount + totalInterest;
             decimal installmentAmount = totalToPay / request.InstallmentsCount;
@@ -35,11 +37,11 @@ namespace Prestacontrol.Application.Services
                 LateFeeRate = request.LateFeeRate,
                 Frequency = request.Frequency,
                 InstallmentsCount = request.InstallmentsCount,
-                StartDate = request.StartDate,
+                StartDate = localStartDate,
                 TotalToPay = totalToPay,
                 BalanceDue = totalToPay,
                 Status = LoanStatus.Active,
-                EndDate = CalculateEndDate(request.StartDate, request.Frequency, request.InstallmentsCount)
+                EndDate = CalculateEndDate(localStartDate, request.Frequency, request.InstallmentsCount)
             };
 
             // Generate Installments
@@ -48,7 +50,7 @@ namespace Prestacontrol.Application.Services
                 loan.Installments.Add(new Installment
                 {
                     InstallmentNumber = i,
-                    DueDate = CalculateDueDate(request.StartDate, request.Frequency, i),
+                    DueDate = CalculateDueDate(localStartDate, request.Frequency, i),
                     Amount = installmentAmount,
                     PrincipalAmount = principalPerInstallment,
                     InterestAmount = interestPerInstallment,
@@ -169,13 +171,15 @@ namespace Prestacontrol.Application.Services
             }
 
             // If no payments, we can update everything and regenerate installments
+            var localStartDate = request.StartDate.Kind == DateTimeKind.Utc ? request.StartDate.AddHours(-4) : request.StartDate;
+
             loan.ClientName = request.ClientName;
             loan.Amount = request.Amount;
             loan.InterestRate = request.InterestRate;
             loan.LateFeeRate = request.LateFeeRate;
             loan.Frequency = request.Frequency;
             loan.InstallmentsCount = request.InstallmentsCount;
-            loan.StartDate = request.StartDate;
+            loan.StartDate = localStartDate;
 
             // Recalculate totals
             var totalInterest = loan.Amount * (loan.InterestRate / 100);

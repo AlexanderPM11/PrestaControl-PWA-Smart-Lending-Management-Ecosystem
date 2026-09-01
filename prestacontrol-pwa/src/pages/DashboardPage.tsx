@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, CreditCard, DollarSign, Menu, AlertTriangle, PlusCircle, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useToast } from '../context/ToastContext';
 
 import api from '../api/api';
 
@@ -9,6 +10,7 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   useEffect(() => {
     fetchStats();
@@ -20,6 +22,7 @@ const DashboardPage = () => {
       setStats(response.data);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
+      toast.error('Error al cargar las estadísticas del dashboard');
     } finally {
       setLoading(false);
     }

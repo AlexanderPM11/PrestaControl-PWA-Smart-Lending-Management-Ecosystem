@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Edit3, DollarSign, History, Clock, List, CreditCard } from 'lucide-react';
 import api from '../api/api';
+import { useToast } from '../context/ToastContext';
 
 const LoanDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,7 @@ const LoanDetailsPage: React.FC = () => {
   const [audits, setAudits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'historial' | 'auditoria' | 'cuotas'>('historial');
+  const toast = useToast();
 
   useEffect(() => {
     if (id) {
@@ -31,7 +33,7 @@ const LoanDetailsPage: React.FC = () => {
       setAudits(auditsRes.data);
     } catch (err) {
       console.error('Error fetching loan details:', err);
-      alert('Error cargando los detalles del préstamo.');
+      toast.error('Error cargando los detalles del préstamo.');
       navigate('/loans');
     } finally {
       setLoading(false);
@@ -69,7 +71,7 @@ const LoanDetailsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-black text-sage-900 font-display">{loan.clientName}</h1>
           <p className="text-sage-500 font-medium text-sm font-sans mt-1">
-            Préstamo #{loan.id.toString().padStart(4, '0')} • Creado el {new Date(loan.startDate).toLocaleDateString()}
+          Préstamo #{loan.id.toString().padStart(4, '0')} • {new Date(loan.startDate).toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
           </p>
         </div>
       </div>
@@ -169,7 +171,7 @@ const LoanDetailsPage: React.FC = () => {
                     <div>
                       <span className="text-[10px] font-bold text-sage-400 uppercase font-sans">#{payment.id.toString().padStart(6, '0')}</span>
                       <p className="text-sm font-bold text-sage-900 font-sans mt-0.5">
-                        {new Date(payment.paymentDate).toLocaleDateString()}
+                        {new Date(payment.paymentDate).toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                       </p>
                     </div>
                     <p className="font-black text-financial-green font-display">+${payment.amount.toLocaleString()}</p>
@@ -203,7 +205,7 @@ const LoanDetailsPage: React.FC = () => {
                     <div>
                       <span className="text-[10px] font-bold text-sage-400 uppercase font-sans">Cuota {inst.installmentNumber}</span>
                       <p className="text-sm font-bold text-sage-900 font-sans mt-0.5">
-                        Vence: {new Date(inst.dueDate).toLocaleDateString()}
+                        Vence: {new Date(inst.dueDate).toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </p>
                     </div>
                     <div className="text-right">
@@ -241,7 +243,7 @@ const LoanDetailsPage: React.FC = () => {
                             {audit.action}
                           </span>
                           <span className="text-[9px] font-bold text-sage-400 font-sans">
-                            {new Date(audit.date).toLocaleDateString()}
+                            {new Date(audit.date).toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                           </span>
                         </div>
                         <div className="bg-sage-50 p-3 rounded-xl">

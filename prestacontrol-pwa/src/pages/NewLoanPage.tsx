@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, DollarSign, Percent } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/api';
+import { useToast } from '../context/ToastContext';
 
 const NewLoanPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ const NewLoanPage: React.FC = () => {
   const [amount, setAmount] = useState<number | ''>('');
   const [interestRate, setInterestRate] = useState<number | ''>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const toast = useToast();
 
   const formatWithSeparators = (val: number | '') => {
     if (val === '') return '';
@@ -40,20 +41,19 @@ const NewLoanPage: React.FC = () => {
 
   const handleSaveLoan = async () => {
     if (!clientName.trim()) {
-      setError('Debes ingresar el nombre del cliente.');
+      toast.error('Debes ingresar el nombre del cliente.');
       return;
     }
     if (!amount || amount <= 0) {
-      setError('Debes ingresar un monto válido.');
+      toast.error('Debes ingresar un monto válido.');
       return;
     }
     if (interestRate === '' || interestRate < 0) {
-      setError('Debes ingresar una tasa de interés válida.');
+      toast.error('Debes ingresar una tasa de interés válida.');
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
 
     try {
       const payload = {
@@ -67,9 +67,10 @@ const NewLoanPage: React.FC = () => {
       };
 
       await api.post(`/loans`, payload);
+      toast.success('Préstamo registrado exitosamente.');
       navigate('/loans');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al guardar el préstamo.');
+      toast.error(err.response?.data?.message || 'Error al guardar el préstamo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -89,19 +90,6 @@ const NewLoanPage: React.FC = () => {
           <p className="text-sage-500 text-sm font-medium font-sans">Registro de crédito</p>
         </div>
       </div>
-
-      {error && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm flex items-center gap-2 font-sans"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {error}
-        </motion.div>
-      )}
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }} 

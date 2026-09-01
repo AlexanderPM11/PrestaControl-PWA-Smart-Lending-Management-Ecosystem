@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Landmark, Plus, Search, Calendar, ChevronRight, TrendingUp, AlertCircle, CheckCircle2, Trash2, XCircle, RefreshCw } from 'lucide-react';
+import { Landmark, Plus, Search, Calendar, ChevronRight, AlertCircle, CheckCircle2, Trash2, XCircle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import { useToast } from '../context/ToastContext';
+import ConfirmDialog, { type ConfirmDialogType } from '../components/ui/ConfirmDialog';
 
 const LoansPage: React.FC = () => {
   const navigate = useNavigate();
@@ -9,9 +11,11 @@ const LoansPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'activos' | 'pagados' | 'anulados'>('activos');
-  const [modalConfig, setModalConfig] = useState<{isOpen: boolean, type: 'cancel' | 'delete' | 'reactivate', loanId: number | null, title: string, message: string, error?: string}>({
+  const toast = useToast();
+  const [modalConfig, setModalConfig] = useState<{isOpen: boolean, type: ConfirmDialogType, actionType: 'cancel' | 'delete' | 'reactivate', loanId: number | null, title: string, message: string, error?: string}>({
     isOpen: false,
-    type: 'cancel',
+    type: 'warning',
+    actionType: 'cancel',
     loanId: null,
     title: '',
     message: '',
@@ -27,6 +31,7 @@ const LoansPage: React.FC = () => {
       const response = await api.get(`/loans`);
       setLoans(response.data);
     } catch (err) {
+      toast.error('Error al cargar la lista de préstamos');
       console.error('Error fetching loans:', err);
     } finally {
       setLoading(false);
@@ -37,7 +42,8 @@ const LoansPage: React.FC = () => {
     e.stopPropagation();
     setModalConfig({
       isOpen: true,
-      type: 'cancel',
+      type: 'warning',
+      actionType: 'cancel',
       loanId: id,
       title: 'Anular Préstamo',
       message: '¿Estás seguro de que deseas ANULAR este préstamo? No podrá recibir pagos y se marcará como inactivo.'
@@ -48,7 +54,8 @@ const LoansPage: React.FC = () => {
     e.stopPropagation();
     setModalConfig({
       isOpen: true,
-      type: 'delete',
+      type: 'danger',
+      actionType: 'delete',
       loanId: id,
       title: 'Eliminar Préstamo',
       message: '¿Estás totalmente seguro de que deseas ELIMINAR este préstamo de la base de datos? Esta acción es irreversible.'
@@ -59,7 +66,8 @@ const LoansPage: React.FC = () => {
     e.stopPropagation();
     setModalConfig({
       isOpen: true,
-      type: 'reactivate',
+      type: 'success',
+      actionType: 'reactivate',
       loanId: id,
       title: 'Reactivar Préstamo',
       message: '¿Deseas REACTIVAR este préstamo? Volverá a la lista de activos y podrá recibir pagos nuevamente.'
@@ -69,19 +77,23 @@ const LoansPage: React.FC = () => {
   const confirmAction = async () => {
     if (!modalConfig.loanId) return;
     try {
-      if (modalConfig.type === 'cancel') {
+      if (modalConfig.actionType === 'cancel') {
         await api.put(`/loans/${modalConfig.loanId}/cancel`);
-      } else if (modalConfig.type === 'reactivate') {
+        toast.warning('El préstamo ha sido anulado.');
+      } else if (modalConfig.actionType === 'reactivate') {
         await api.put(`/loans/${modalConfig.loanId}/reactivate`);
+        toast.success('El préstamo fue reactivado exitosamente.');
       } else {
         await api.delete(`/loans/${modalConfig.loanId}`);
+        toast.success('El préstamo fue eliminado del sistema.');
       }
       setModalConfig({ ...modalConfig, isOpen: false });
       fetchLoans();
     } catch (err: any) {
       console.error('Error in confirmAction:', err);
       const errorMsg = err.response?.data?.message || 'Error al procesar la solicitud.';
-      setModalConfig({ ...modalConfig, error: errorMsg });
+      toast.error(errorMsg);
+      setModalConfig({ ...modalConfig, isOpen: false });
     }
   };
 
@@ -185,7 +197,7 @@ const LoansPage: React.FC = () => {
                     <div>
                       <p className="font-bold text-sage-900 text-sm font-sans">{loan.clientName}</p>
                       <p className="text-[10px] text-sage-500 font-bold uppercase flex items-center gap-1">
-                        <Calendar size={10} /> {new Date(loan.startDate).toLocaleString('es-DO', { dateStyle: 'short' })}
+                        <Calendar size={10} /> {new Date(loan.startDate).toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                       </p>
                     </div>
                   </div>
@@ -258,54 +270,14 @@ const LoansPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal */}
-      {modalConfig.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-sage-900/40 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-[32px] p-6 max-w-[320px] w-full shadow-2xl border border-sage-100">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${
-              modalConfig.type === 'cancel' ? 'bg-amber-100 text-amber-600' : 
-              modalConfig.type === 'reactivate' ? 'bg-emerald-100 text-emerald-600' :
-              'bg-red-100 text-red-600'
-            }`}>
-              {modalConfig.type === 'cancel' ? <AlertCircle size={32} /> : 
-               modalConfig.type === 'reactivate' ? <RefreshCw size={32} /> : 
-               <Trash2 size={32} />}
-            </div>
-            <h3 className="text-xl font-black text-center text-sage-900 mb-2 font-display">
-              {modalConfig.title}
-            </h3>
-            <p className="text-sage-500 text-center text-xs mb-6 font-medium leading-relaxed font-sans">
-              {modalConfig.message}
-            </p>
-
-            {modalConfig.error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl">
-                <p className="text-[10px] font-bold text-red-600 text-center uppercase tracking-wider">
-                  {modalConfig.error}
-                </p>
-              </div>
-            )}
-            <div className="flex flex-col gap-2">
-              <button 
-                onClick={confirmAction}
-                className={`w-full py-3.5 rounded-2xl font-bold text-white transition-all shadow-lg text-sm font-sans ${
-                  modalConfig.type === 'cancel' ? 'bg-amber-500 shadow-amber-500/30' : 
-                  modalConfig.type === 'reactivate' ? 'bg-emerald-500 shadow-emerald-500/30' :
-                  'bg-red-500 shadow-red-500/30'
-                }`}
-              >
-                Confirmar Acción
-              </button>
-              <button 
-                onClick={() => setModalConfig({ ...modalConfig, isOpen: false })}
-                className="w-full py-3.5 rounded-2xl font-bold text-sage-500 bg-sage-50 hover:bg-sage-100 transition-all text-sm font-sans"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog 
+        isOpen={modalConfig.isOpen}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onConfirm={confirmAction}
+        onCancel={() => setModalConfig({ ...modalConfig, isOpen: false })}
+      />
     </div>
   );
 };

@@ -1,11 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // In production Nginx proxies /api to the API container. Keeping this
-  // relative avoids cross-origin preflight requests and proxy redirects.
-  baseURL: import.meta.env.DEV
-    ? (import.meta.env.VITE_API_URL || '/api')
-    : '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 api.interceptors.request.use((config) => {

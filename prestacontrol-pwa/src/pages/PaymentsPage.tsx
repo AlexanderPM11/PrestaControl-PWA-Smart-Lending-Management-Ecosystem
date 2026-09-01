@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Wallet, Search, ArrowLeft, DollarSign, Calendar, Info, CheckCircle2 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import api from '../api/api';
+import { useToast } from '../context/ToastContext';
 
 const PaymentsPage: React.FC = () => {
   const [loans, setLoans] = useState<any[]>([]);
@@ -11,6 +12,7 @@ const PaymentsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const toast = useToast();
 
   const location = useLocation();
 
@@ -33,6 +35,7 @@ const PaymentsPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching loans:', err);
+      toast.error('Error al cargar la lista de préstamos pendientes');
     }
   };
 
@@ -41,7 +44,7 @@ const PaymentsPage: React.FC = () => {
     if (!selectedLoan || numAmount <= 0) return;
 
     if (numAmount > selectedLoan.balanceDue + 0.01) {
-      alert(`El monto (${numAmount.toLocaleString()}) no puede ser mayor al saldo pendiente (${selectedLoan.balanceDue.toLocaleString()})`);
+      toast.warning(`El monto (${numAmount.toLocaleString()}) no puede ser mayor al saldo pendiente (${selectedLoan.balanceDue.toLocaleString()})`);
       return;
     }
 
@@ -55,13 +58,14 @@ const PaymentsPage: React.FC = () => {
         paymentMethod: 'Efectivo',
         notes: 'Pago recibido desde la PWA'
       });
-      
       setTransactions(response.data);
       setSuccess(true);
       fetchPendingLoans();
       setDisplayAmount('');
+      toast.success('Pago procesado correctamente');
     } catch (err) {
       console.error('Error processing payment:', err);
+      toast.error('Error al procesar el pago');
     } finally {
       setIsSubmitting(false);
     }

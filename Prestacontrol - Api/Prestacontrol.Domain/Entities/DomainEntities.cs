@@ -5,7 +5,7 @@ namespace Prestacontrol.Domain.Entities
     public abstract class BaseEntity
     {
         public int Id { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(-4);
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
     }
 
@@ -73,7 +73,7 @@ namespace Prestacontrol.Domain.Entities
         public User User { get; set; } = null!;
 
         public decimal Amount { get; set; }
-        public DateTime PaymentDate { get; set; } = DateTime.UtcNow.AddHours(-4);
+        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
         public string PaymentMethod { get; set; } = "Efectivo";
         public string? Notes { get; set; }
     }
@@ -86,7 +86,7 @@ namespace Prestacontrol.Domain.Entities
         public string? Description { get; set; }
         public int UserId { get; set; }
         public User User { get; set; } = null!;
-        public DateTime Date { get; set; } = DateTime.UtcNow.AddHours(-4);
+        public DateTime Date { get; set; } = DateTime.UtcNow;
     }
 
     public class FinancialTransaction : BaseEntity
@@ -101,14 +101,14 @@ namespace Prestacontrol.Domain.Entities
         public decimal Amount { get; set; }
         public string Type { get; set; } = string.Empty; // Capital, Interest, LateFee
         public string Description { get; set; } = string.Empty;
-        public DateTime Date { get; set; } = DateTime.UtcNow.AddHours(-4);
+        public DateTime Date { get; set; } = DateTime.UtcNow;
     }
 
     public class SystemConfig
     {
         public string Key { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow.AddHours(-4);
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 
     public class LoanAuditLog : BaseEntity
@@ -117,6 +117,6 @@ namespace Prestacontrol.Domain.Entities
         public Loan Loan { get; set; } = null!;
         public string Action { get; set; } = string.Empty; // e.g., "Edited", "Cancelled", "Reactivated"
         public string ChangesDescription { get; set; } = string.Empty;
-        public DateTime Date { get; set; } = DateTime.UtcNow.AddHours(-4);
+        public DateTime Date { get; set; } = DateTime.UtcNow;
     }
 }
