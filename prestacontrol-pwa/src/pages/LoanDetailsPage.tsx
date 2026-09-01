@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Landmark, Calendar, AlertCircle, CheckCircle2, ChevronLeft, CreditCard, Clock, Edit3, DollarSign, List, History } from 'lucide-react';
+import { ChevronLeft, Edit3, DollarSign, History, Clock, List, CreditCard } from 'lucide-react';
 import api from '../api/api';
 
 const LoanDetailsPage: React.FC = () => {
@@ -10,7 +10,7 @@ const LoanDetailsPage: React.FC = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [audits, setAudits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'cuotas' | 'historial' | 'auditoria'>('historial');
+  const [activeTab, setActiveTab] = useState<'historial' | 'auditoria' | 'cuotas'>('historial');
 
   useEffect(() => {
     if (id) {
@@ -41,188 +41,211 @@ const LoanDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-sage-200 border-t-financial-green rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!loan) return null;
 
-  const hasPayments = payments.length > 0;
   const progress = ((loan.totalToPay - loan.balanceDue) / loan.totalToPay) * 100;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto pb-24 animate-fade-in-up">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <button 
-            onClick={() => navigate('/loans')}
-            className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors mb-2 font-bold text-sm"
-          >
-            <ChevronLeft size={16} /> Volver a Préstamos
-          </button>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              {loan.clientName.charAt(0)}
-            </div>
-            {loan.clientName}
-          </h1>
-          <p className="text-slate-500 font-medium mt-1 ml-16">Préstamo #{loan.id.toString().padStart(4, '0')} • Creado el {new Date(loan.startDate).toLocaleDateString()}</p>
-        </div>
+    <div className="space-y-6 pt-2 pb-24 animate-fade-in-up">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <button 
+          onClick={() => navigate('/loans')}
+          className="p-3 bg-white rounded-full shadow-sm text-sage-900 hover:bg-sage-100 transition-colors"
+        >
+          <ChevronLeft size={24} />
+        </button>
+      </div>
 
-        <div className="flex gap-3">
-          <button 
-            onClick={() => navigate(`/loans/edit/${loan.id}`)}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold transition-all"
-          >
-            <Edit3 size={18} /> Editar
-          </button>
-          {loan.status !== 'Cancelled' && loan.status !== 'Paid' && (
-            <button 
-              onClick={() => navigate(`/payments?loanId=${loan.id}`)}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-xl shadow-blue-500/30 transition-all transform active:scale-95"
-            >
-              <DollarSign size={18} /> Realizar Cobro
-            </button>
-          )}
+      <div className="flex flex-col items-center text-center space-y-3">
+        <div className="w-16 h-16 bg-sage-900 text-white font-display text-2xl rounded-[20px] flex items-center justify-center shadow-lg shadow-sage-900/20">
+          {loan.clientName.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <h1 className="text-2xl font-black text-sage-900 font-display">{loan.clientName}</h1>
+          <p className="text-sage-500 font-medium text-sm font-sans mt-1">
+            Préstamo #{loan.id.toString().padStart(4, '0')} • Creado el {new Date(loan.startDate).toLocaleDateString()}
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-xl border border-slate-100 dark:border-slate-800">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Monto Principal</p>
-          <p className="text-2xl font-black text-slate-900 dark:text-white">${loan.amount.toLocaleString()}</p>
-          <p className="text-[10px] font-bold text-slate-400 mt-1">Capital inicial</p>
+      <div className="flex gap-3">
+        <button 
+          onClick={() => navigate(`/loans/edit/${loan.id}`)}
+          className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white border border-sage-200 hover:bg-sage-50 text-sage-700 rounded-2xl font-bold transition-all shadow-sm font-sans"
+        >
+          <Edit3 size={18} /> Editar
+        </button>
+        {loan.status !== 'Cancelled' && loan.status !== 'Paid' && (
+          <button 
+            onClick={() => navigate(`/payments?loanId=${loan.id}`)}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-tangerine-500 hover:bg-tangerine-600 text-white rounded-2xl font-black shadow-lg shadow-tangerine-500/30 transition-all active:scale-95 font-sans"
+          >
+            <DollarSign size={18} /> Cobrar
+          </button>
+        )}
+      </div>
+
+      {/* Cards */}
+      <div className="space-y-3">
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-sage-100">
+          <p className="text-[10px] font-black uppercase tracking-widest text-sage-400 font-sans mb-1">Monto Principal</p>
+          <p className="text-2xl font-black text-sage-900 font-display">${loan.amount.toLocaleString()}</p>
+          <p className="text-[10px] font-bold text-sage-400 font-sans mt-1">Capital inicial</p>
         </div>
         
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-xl border border-slate-100 dark:border-slate-800">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total a Pagar</p>
-          <p className="text-2xl font-black text-blue-600 dark:text-blue-400">${loan.totalToPay.toLocaleString()}</p>
-          <p className="text-[10px] font-bold text-blue-400/60 mt-1">Incluye intereses ({loan.interestRate}%)</p>
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-sage-100">
+          <p className="text-[10px] font-black uppercase tracking-widest text-sage-400 font-sans mb-1">Total a Pagar</p>
+          <p className="text-2xl font-black text-financial-green font-display">${loan.totalToPay.toLocaleString()}</p>
+          <p className="text-[10px] font-bold text-sage-400 font-sans mt-1">Incluye intereses ({loan.interestRate}%)</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-xl border border-slate-100 dark:border-slate-800">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Pagado</p>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">${(loan.totalToPay - loan.balanceDue).toLocaleString()}</p>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-sage-100">
+          <p className="text-[10px] font-black uppercase tracking-widest text-sage-400 font-sans mb-1">Total Pagado</p>
+          <p className="text-2xl font-black text-sage-900 font-display">${(loan.totalToPay - loan.balanceDue).toLocaleString()}</p>
+          <div className="w-full bg-sage-100 h-1.5 rounded-full mt-3 overflow-hidden">
             <div 
-              className="bg-emerald-500 h-full transition-all duration-1000" 
+              className="bg-financial-green h-full transition-all duration-1000" 
               style={{ width: `${Math.min(100, progress)}%` }}
             />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-950 p-6 rounded-[32px] shadow-2xl border border-slate-700 dark:border-slate-800 relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Saldo Pendiente</p>
-          <p className="text-3xl font-black text-white">${loan.balanceDue.toLocaleString()}</p>
-          <div className="w-full bg-slate-700 h-1 rounded-full mt-2 overflow-hidden">
+        <div className="bg-tangerine-500 p-6 rounded-3xl shadow-lg shadow-tangerine-500/20 relative overflow-hidden text-white border border-tangerine-600/30">
+          <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-tangerine-100 font-sans mb-1">Saldo Pendiente</p>
+          <p className="text-3xl font-black font-display">${loan.balanceDue.toLocaleString()}</p>
+          <div className="w-full bg-tangerine-600 h-1.5 rounded-full mt-3 overflow-hidden">
             <div 
-              className="bg-emerald-500 h-full transition-all duration-1000" 
+              className="bg-white h-full transition-all duration-1000" 
               style={{ width: `${Math.max(0.5, progress)}%` }}
             />
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border ${
-                loan.status === 'Cancelled' ? 'bg-slate-700 text-slate-400 border-slate-600' : 
-                loan.status === 'Paid' ? 'bg-emerald-900/40 text-emerald-400 border-emerald-500/30' : 
-                loan.status === 'Overdue' ? 'bg-red-900/40 text-red-400 border-red-500/30' : 
-                'bg-blue-900/40 text-blue-400 border-blue-500/30'
-            }`}>
+          <div className="mt-4 flex items-center justify-between font-sans">
+            <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-white text-tangerine-600`}>
               {loan.status === 'Cancelled' ? 'Anulado' : loan.status === 'Paid' ? 'Completado' : loan.status === 'Overdue' ? 'En Mora' : 'Activo'}
             </span>
-            <p className="text-[10px] font-black text-emerald-500">
+            <p className="text-[10px] font-black text-white tracking-widest uppercase">
               {progress > 0 && progress < 1 ? progress.toFixed(2) : Math.round(progress)}% PAGADO
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-        <div className="p-4 border-b border-slate-50 dark:border-slate-800 flex bg-slate-50 dark:bg-slate-800/50 m-6 rounded-2xl p-1">
+      {/* Tabs */}
+      <div className="bg-white rounded-[32px] shadow-sm border border-sage-100 overflow-hidden">
+        <div className="flex bg-sage-50 m-2 rounded-2xl p-1">
             <button 
               onClick={() => setActiveTab('historial')}
-              className={`flex-1 flex justify-center items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'historial' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'historial' ? 'bg-white text-sage-900 shadow-sm' : 'text-sage-500'}`}
             >
-              <History size={18} /> Historial de Pagos
-            </button>
-            <button 
-              onClick={() => setActiveTab('auditoria')}
-              className={`flex-1 flex justify-center items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'auditoria' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-            >
-              <Clock size={18} /> Historial de Cambios
+              <History size={16} /> Pagos
             </button>
             <button 
               onClick={() => setActiveTab('cuotas')}
-              className={`flex-1 flex justify-center items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'cuotas' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'cuotas' ? 'bg-white text-sage-900 shadow-sm' : 'text-sage-500'}`}
             >
-              <List size={18} /> Cuotas Programadas
+              <List size={16} /> Cuotas
+            </button>
+            <button 
+              onClick={() => setActiveTab('auditoria')}
+              className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'auditoria' ? 'bg-white text-sage-900 shadow-sm' : 'text-sage-500'}`}
+            >
+              <Clock size={16} /> Cambios
             </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="p-2">
           {activeTab === 'historial' ? (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 text-[10px] uppercase font-black tracking-widest text-slate-400">
-                  <th className="px-8 py-5">ID Recibo</th>
-                  <th className="px-8 py-5">Fecha</th>
-                  <th className="px-8 py-5">Monto Pagado</th>
-                  <th className="px-8 py-5">Método</th>
-                  <th className="px-8 py-5">Notas</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                {payments.length > 0 ? payments.map((payment: any) => (
-                  <tr key={payment.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
-                    <td className="px-8 py-6 font-bold text-slate-500 text-xs">#{payment.id.toString().padStart(6, '0')}</td>
-                    <td className="px-8 py-6 text-slate-900 dark:text-white font-medium">
-                      {new Date(payment.paymentDate).toLocaleString()}
-                    </td>
-                    <td className="px-8 py-6 font-black text-emerald-600 dark:text-emerald-400">+${payment.amount.toLocaleString()}</td>
-                    <td className="px-8 py-6 text-slate-600 dark:text-slate-300">
-                      <span className="flex items-center gap-1 text-xs font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit">
-                        <CreditCard size={12} /> {payment.paymentMethod}
+            <div className="space-y-2">
+              {payments.length > 0 ? payments.map((payment: any) => (
+                <div key={payment.id} className="p-4 bg-sage-50 rounded-2xl flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold text-sage-400 uppercase font-sans">#{payment.id.toString().padStart(6, '0')}</span>
+                      <p className="text-sm font-bold text-sage-900 font-sans mt-0.5">
+                        {new Date(payment.paymentDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="font-black text-financial-green font-display">+${payment.amount.toLocaleString()}</p>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-white text-sage-600 rounded-lg">
+                      <CreditCard size={10} /> {payment.paymentMethod}
+                    </span>
+                    {payment.notes && (
+                      <p className="text-xs text-sage-500 italic max-w-[150px] truncate" title={payment.notes}>
+                        {payment.notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )) : (
+                <div className="py-10 text-center">
+                  <div className="w-12 h-12 bg-sage-50 rounded-full flex items-center justify-center mx-auto mb-3 text-sage-400">
+                    <History size={24} />
+                  </div>
+                  <h3 className="text-sm font-bold text-sage-500 font-sans">Sin pagos</h3>
+                  <p className="text-sage-400 text-xs mt-1 font-sans">Aún no hay abonos.</p>
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'cuotas' ? (
+            <div className="space-y-2">
+              {loan.installments.map((inst: any) => (
+                <div key={inst.id} className="p-4 bg-sage-50 rounded-2xl flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold text-sage-400 uppercase font-sans">Cuota {inst.installmentNumber}</span>
+                      <p className="text-sm font-bold text-sage-900 font-sans mt-0.5">
+                        Vence: {new Date(inst.dueDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-black text-sage-900 font-display">${inst.amount.toLocaleString()}</p>
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest mt-1 inline-block ${
+                        inst.status === 'Paid' ? 'bg-financial-green/10 text-financial-green' :
+                        inst.status === 'Overdue' ? 'bg-red-100 text-red-600' :
+                        inst.status === 'Partial' ? 'bg-tangerine-100 text-tangerine-600' :
+                        'bg-sage-200 text-sage-600'
+                      }`}>
+                        {inst.status === 'Paid' ? 'Pagada' : inst.status === 'Overdue' ? 'Vencida' : inst.status === 'Partial' ? 'Parcial' : 'Pendiente'}
                       </span>
-                    </td>
-                    <td className="px-8 py-6 text-slate-500 text-sm italic max-w-xs truncate" title={payment.notes}>
-                      {payment.notes || '-'}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={5} className="px-8 py-20 text-center">
-                      <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                        <History size={32} />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-500">Sin historial de pagos</h3>
-                      <p className="text-slate-400 text-sm mt-1">Este préstamo aún no ha recibido ningún abono.</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          ) : activeTab === 'auditoria' ? (
-            <div className="p-8">
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-sans mt-1 pt-2 border-t border-sage-200/50">
+                    <p className="text-sage-500">Pagado: <span className="font-bold text-financial-green">${inst.paidAmount.toLocaleString()}</span></p>
+                    <p className="text-sage-500">Debe: <span className="font-bold text-tangerine-500">${(inst.amount - inst.paidAmount).toLocaleString()}</span></p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4">
               {audits.length > 0 ? (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {audits.map((audit) => (
-                    <div key={audit.id} className="flex gap-4 items-start group">
+                    <div key={audit.id} className="flex gap-3 items-start">
                       <div className="mt-1 flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-blue-500 ring-4 ring-blue-500/20 group-hover:scale-125 transition-transform"></div>
-                        <div className="w-0.5 h-full min-h-[40px] bg-slate-100 dark:bg-slate-800"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-sage-300"></div>
+                        <div className="w-0.5 h-full min-h-[30px] bg-sage-100 mt-1"></div>
                       </div>
-                      <div className="flex-1 pb-4">
+                      <div className="flex-1 pb-2">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-sage-600 font-sans">
                             {audit.action}
                           </span>
-                          <span className="text-[10px] font-bold text-slate-400">
-                            {new Date(audit.date).toLocaleString()}
+                          <span className="text-[9px] font-bold text-sage-400 font-sans">
+                            {new Date(audit.date).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                          <p className="text-sm text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap leading-relaxed">
+                        <div className="bg-sage-50 p-3 rounded-xl">
+                          <p className="text-xs text-sage-700 font-medium font-sans whitespace-pre-wrap leading-relaxed">
                             {audit.changesDescription}
                           </p>
                         </div>
@@ -231,51 +254,15 @@ const LoanDetailsPage: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center">
-                  <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                    <Clock size={32} />
+                <div className="py-10 text-center">
+                  <div className="w-12 h-12 bg-sage-50 rounded-full flex items-center justify-center mx-auto mb-3 text-sage-400">
+                    <Clock size={24} />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-500">Sin cambios registrados</h3>
-                  <p className="text-slate-400 text-sm mt-1">Este préstamo no ha tenido modificaciones aún.</p>
+                  <h3 className="text-sm font-bold text-sage-500 font-sans">Sin cambios</h3>
+                  <p className="text-sage-400 text-xs mt-1 font-sans">No hay registro de modificaciones.</p>
                 </div>
               )}
             </div>
-          ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 text-[10px] uppercase font-black tracking-widest text-slate-400">
-                  <th className="px-8 py-5">Cuota #</th>
-                  <th className="px-8 py-5">Fecha de Vencimiento</th>
-                  <th className="px-8 py-5">Monto</th>
-                  <th className="px-8 py-5">Pagado</th>
-                  <th className="px-8 py-5">Pendiente</th>
-                  <th className="px-8 py-5">Estado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                {loan.installments.map((inst: any) => (
-                  <tr key={inst.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
-                    <td className="px-8 py-6 font-bold text-slate-900 dark:text-white">{inst.installmentNumber}</td>
-                    <td className="px-8 py-6 text-slate-600 dark:text-slate-300">
-                      {new Date(inst.dueDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-8 py-6 font-bold text-slate-900 dark:text-white">${inst.amount.toLocaleString()}</td>
-                    <td className="px-8 py-6 text-emerald-600 font-bold">${inst.paidAmount.toLocaleString()}</td>
-                    <td className="px-8 py-6 text-amber-600 font-bold">${(inst.amount - inst.paidAmount).toLocaleString()}</td>
-                    <td className="px-8 py-6">
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border ${
-                        inst.status === 'Paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                        inst.status === 'Overdue' ? 'bg-red-50 text-red-600 border-red-100' :
-                        inst.status === 'Partial' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                        'bg-slate-50 text-slate-500 border-slate-200'
-                      }`}>
-                        {inst.status === 'Paid' ? 'Pagada' : inst.status === 'Overdue' ? 'Vencida' : inst.status === 'Partial' ? 'Parcial' : 'Pendiente'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           )}
         </div>
       </div>
