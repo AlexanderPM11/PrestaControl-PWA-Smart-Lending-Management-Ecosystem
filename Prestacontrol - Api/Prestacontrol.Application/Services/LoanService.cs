@@ -135,7 +135,17 @@ namespace Prestacontrol.Application.Services
         public async Task<IEnumerable<PaymentDto>> GetLoanPaymentsAsync(int loanId)
         {
             var payments = await _unitOfWork.Payments.FindAsync(p => p.LoanId == loanId);
-            return _mapper.Map<IEnumerable<PaymentDto>>(payments.OrderByDescending(p => p.PaymentDate));
+            var transactions = await _unitOfWork.FinancialTransactions.FindAsync(t => t.LoanId == loanId && t.PaymentId != null);
+            
+            var dtos = _mapper.Map<IEnumerable<PaymentDto>>(payments.OrderByDescending(p => p.PaymentDate)).ToList();
+            
+            foreach (var dto in dtos)
+            {
+                dto.CapitalAmount = transactions.Where(t => t.PaymentId == dto.Id && t.Type == "Capital").Sum(t => t.Amount);
+                dto.InterestAmount = transactions.Where(t => t.PaymentId == dto.Id && t.Type == "Interés").Sum(t => t.Amount);
+            }
+            
+            return dtos;
         }
 
         public async Task<IEnumerable<LoanAuditLogDto>> GetLoanAuditsAsync(int loanId)

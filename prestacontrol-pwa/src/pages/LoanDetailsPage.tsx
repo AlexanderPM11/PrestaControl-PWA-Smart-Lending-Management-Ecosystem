@@ -12,6 +12,10 @@ const LoanDetailsPage: React.FC = () => {
   const [audits, setAudits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'historial' | 'auditoria' | 'cuotas'>('historial');
+  const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [editCapital, setEditCapital] = useState('');
+  const [editInterest, setEditInterest] = useState('');
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -37,6 +41,34 @@ const LoanDetailsPage: React.FC = () => {
       navigate('/loans');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditPaymentSubmit = async () => {
+    if (!editingPayment) return;
+    const numCap = parseFloat(editCapital.replace(/,/g, '')) || 0;
+    const numInt = parseFloat(editInterest.replace(/,/g, '')) || 0;
+
+    if (numCap < 0 || numInt < 0 || (numCap === 0 && numInt === 0)) {
+      toast.warning('Debe ingresar al menos un monto válido');
+      return;
+    }
+
+    try {
+      setIsSubmittingEdit(true);
+      await api.put(`/payments/${editingPayment.id}`, {
+        capitalAmount: numCap,
+        interestAmount: numInt,
+        notes: editingPayment.notes // keep existing notes
+      });
+      toast.success('Pago actualizado correctamente');
+      setEditingPayment(null);
+      fetchData(); // Refresh loan balance and payments
+    } catch (err: any) {
+      console.error('Error updating payment:', err);
+      toast.error(err.response?.data?.message || 'Error al actualizar el pago');
+    } finally {
+      setIsSubmittingEdit(false);
     }
   };
 
@@ -166,7 +198,7 @@ const LoanDetailsPage: React.FC = () => {
           {activeTab === 'historial' ? (
             <div className="space-y-2">
               {payments.length > 0 ? payments.map((payment: any) => (
-                <div key={payment.id} className="p-4 bg-sage-50 rounded-2xl flex flex-col gap-2">
+                <div key={payment.id} className="p-4 bg-sage-50 rounded-2xl flex flex-col gap-2 relative group">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-[10px] font-bold text-sage-400 uppercase font-sans">#{payment.id.toString().padStart(6, '0')}</span>
@@ -174,8 +206,27 @@ const LoanDetailsPage: React.FC = () => {
                         {new Date(payment.paymentDate).toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                       </p>
                     </div>
-                    <p className="font-black text-financial-green font-display">+${payment.amount.toLocaleString()}</p>
+                    <div className="text-right">
+                      <p className="font-black text-financial-green font-display">+${payment.amount.toLocaleString()}</p>
+                      <button 
+                        onClick={() => {
+                          setEditingPayment(payment);
+                          setEditCapital(payment.capitalAmount?.toString() || '0');
+                          setEditInterest(payment.interestAmount?.toString() || '0');
+                        }}
+                        className="text-sage-400 hover:text-tangerine-500 mt-1 transition-colors float-right"
+                        title="Editar Pago"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                    </div>
                   </div>
+                  
+                  <div className="flex justify-between items-center text-xs bg-white/50 p-2 rounded-lg border border-sage-100 mt-1">
+                    <p className="text-sage-600 font-medium">Capital: <span className="font-bold text-sage-900">${(payment.capitalAmount || 0).toLocaleString()}</span></p>
+                    <p className="text-sage-600 font-medium">Interés: <span className="font-bold text-tangerine-600">${(payment.interestAmount || 0).toLocaleString()}</span></p>
+                  </div>
+
                   <div className="flex justify-between items-center mt-1">
                     <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-white text-sage-600 rounded-lg">
                       <CreditCard size={10} /> {payment.paymentMethod}
@@ -268,6 +319,62 @@ const LoanDetailsPage: React.FC = () => {
           )}
         </div>
       </div>
+      {/* Edit Payment Modal */}
+      {editingPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sage-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[32px] p-6 w-full max-w-md shadow-2xl space-y-6">
+            <h3 className="text-xl font-black text-sage-900 font-display">Editar Pago #{editingPayment.id}</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-1">Abono a Capital</label>
+                <input
+                  type="text"
+                  value={editCapital}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    const parts = val.split('.');
+                    if(parts[0]) parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    setEditCapital(parts.join('.'));
+                  }}
+                  className="w-full px-4 py-3 bg-sage-50 border border-sage-200 rounded-xl font-bold focus:ring-2 focus:ring-tangerine-500 outline-none text-sage-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-1">Pago de Interés</label>
+                <input
+                  type="text"
+                  value={editInterest}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    const parts = val.split('.');
+                    if(parts[0]) parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    setEditInterest(parts.join('.'));
+                  }}
+                  className="w-full px-4 py-3 bg-sage-50 border border-sage-200 rounded-xl font-bold focus:ring-2 focus:ring-tangerine-500 outline-none text-sage-900"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingPayment(null)}
+                className="flex-1 py-3.5 bg-sage-100 hover:bg-sage-200 text-sage-700 rounded-2xl font-bold transition-all font-sans"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditPaymentSubmit}
+                disabled={isSubmittingEdit}
+                className="flex-1 py-3.5 bg-tangerine-500 hover:bg-tangerine-600 text-white rounded-2xl font-black shadow-lg shadow-tangerine-500/30 transition-all flex justify-center items-center font-sans disabled:opacity-50"
+              >
+                {isSubmittingEdit ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

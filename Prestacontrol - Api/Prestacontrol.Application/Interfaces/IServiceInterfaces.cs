@@ -36,6 +36,7 @@ namespace Prestacontrol.Application.Interfaces
     {
         Task<IEnumerable<TransactionDto>> ProcessPaymentAsync(PaymentRequest request, int userId);
         Task<IEnumerable<LoanDto>> GetPendingLoansAsync();
+        Task<bool> EditPaymentAsync(int paymentId, EditPaymentRequest request, int userId);
     }
 
     public interface IDelinquencyService

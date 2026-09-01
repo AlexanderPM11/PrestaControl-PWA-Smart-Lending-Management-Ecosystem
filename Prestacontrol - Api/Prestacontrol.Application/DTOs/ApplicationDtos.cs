@@ -71,10 +71,19 @@ namespace Prestacontrol.Application.DTOs
         public int Id { get; set; }
         public int LoanId { get; set; }
         public decimal Amount { get; set; }
+        public decimal CapitalAmount { get; set; }
+        public decimal InterestAmount { get; set; }
         public DateTime PaymentDate { get; set; }
         public string PaymentMethod { get; set; } = string.Empty;
         public string? Notes { get; set; }
         public int? InstallmentId { get; set; }
+    }
+
+    public class EditPaymentRequest
+    {
+        public decimal CapitalAmount { get; set; }
+        public decimal InterestAmount { get; set; }
+        public string? Notes { get; set; }
     }
 
     public class UpdateLoanRequest

@@ -39,5 +39,21 @@ namespace Prestacontrol.API.Controllers
             var result = await _paymentService.GetPendingLoansAsync();
             return Ok(result);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> EditPayment(int id, [FromBody] EditPaymentRequest request)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var result = await _paymentService.EditPaymentAsync(id, request, userId);
+                if (!result) return NotFound(new { message = "Pago no encontrado" });
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
