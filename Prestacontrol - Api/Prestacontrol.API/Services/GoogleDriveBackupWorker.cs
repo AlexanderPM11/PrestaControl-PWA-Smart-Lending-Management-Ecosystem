@@ -116,17 +116,37 @@ public sealed class GoogleDriveBackupWorker : BackgroundService
     private async Task UploadToDrive(string archive, CancellationToken cancellationToken)
     {
         var token = await GetAccessToken(cancellationToken);
-        var metadata = JsonSerializer.Serialize(new { name = $"prestacontrol-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.pca", parents = new[] { GetRequired("BACKUP_GOOGLE_DRIVE_FOLDER_ID") }, description = "Encrypted PrestaControl full backup" });
+        var folder = GetRequired("BACKUP_GOOGLE_DRIVE_FOLDER_ID");
+        await ValidateDriveFolder(folder, token, cancellationToken);
+        var metadata = JsonSerializer.Serialize(new { name = $"prestacontrol-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.pca", parents = new[] { folder }, description = "Encrypted PrestaControl full backup" });
         using var content = new MultipartContent("related", "backup-boundary");
         var metadataPart = new StringContent(metadata, Encoding.UTF8, "application/json");
         var filePart = new StreamContent(File.OpenRead(archive));
         filePart.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
         content.Add(metadataPart);
         content.Add(filePart);
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart") { Content = content };
+        using var request = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true") { Content = content };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var response = await _httpClientFactory.CreateClient().SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccess(response, "uploading backup");
+    }
+
+    private async Task ValidateDriveFolder(string folder, string token, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"https://www.googleapis.com/drive/v3/files/{Uri.EscapeDataString(folder)}?fields=id,name,mimeType,trashed&supportsAllDrives=true");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await _httpClientFactory.CreateClient().SendAsync(request, cancellationToken);
+        await EnsureSuccess(response, "validating Google Drive backup folder");
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        if (!json.RootElement.TryGetProperty("mimeType", out var type) || type.GetString() != "application/vnd.google-apps.folder")
+            throw new InvalidOperationException("BACKUP_GOOGLE_DRIVE_FOLDER_ID no corresponde a una carpeta de Google Drive.");
+    }
+
+    private static async Task EnsureSuccess(HttpResponseMessage response, string operation)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var body = await response.Content.ReadAsStringAsync();
+        throw new HttpRequestException($"Google Drive error while {operation}: {(int)response.StatusCode} {response.ReasonPhrase}. {body}");
     }
 
     private async Task ApplyRetention(CancellationToken cancellationToken)
