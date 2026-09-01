@@ -136,7 +136,7 @@ const ProfilePage: React.FC = () => {
         <p className="text-sm font-bold text-sage-500 font-sans tracking-wider uppercase">@{user?.username}</p>
       </div>
 
-      <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
+      {user?.role === 'Admin' && <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
         <h3 className="text-lg font-black text-sage-900 font-display mb-4 flex items-center gap-2">
           <UserCircle2 size={20} className="text-tangerine-500" /> Datos Personales
         </h3>
@@ -158,7 +158,7 @@ const ProfilePage: React.FC = () => {
             {isSubmittingProfile ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Actualizar Nombre'}
           </button>
         </form>
-      </div>
+      </div>}
 
       <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
         <div className="flex items-start justify-between gap-4">

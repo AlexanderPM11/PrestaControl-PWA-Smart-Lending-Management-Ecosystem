@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wallet, UserCircle2, ArrowLeft, Users } from 'lucide-react';
+import { LayoutDashboard, Wallet, UserCircle2, ArrowLeft, Users, UserCog } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import ConfirmDialog from '../ui/ConfirmDialog';
 
@@ -20,6 +20,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     { label: 'Inicio', icon: LayoutDashboard, path: '/dashboard' },
     { label: 'Préstamos', icon: Wallet, path: '/loans' },
     { label: 'Clientes', icon: Users, path: '/clients' },
+    ...(user?.role === 'Admin' ? [{ label: 'Usuarios', icon: UserCog, path: '/users' }] : []),
     { label: 'Perfil', icon: UserCircle2, path: '/profile' }, // Replace logout with profile placeholder or keep logout
   ];
 

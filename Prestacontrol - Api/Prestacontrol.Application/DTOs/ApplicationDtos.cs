@@ -11,6 +11,23 @@ namespace Prestacontrol.Application.DTOs
         public bool IsActive { get; set; }
     }
 
+    public class CreateManagedUserRequest
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public UserRole Role { get; set; } = UserRole.Cobrador;
+    }
+
+    public class UpdateManagedUserRequest
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string? Password { get; set; }
+        public UserRole Role { get; set; } = UserRole.Cobrador;
+        public bool IsActive { get; set; } = true;
+    }
+
     public class LoginRequest { public string Username { get; set; } = string.Empty; public string Password { get; set; } = string.Empty; }
     public class LoginResponse { public string Token { get; set; } = string.Empty; public UserDto User { get; set; } = null!; }
 

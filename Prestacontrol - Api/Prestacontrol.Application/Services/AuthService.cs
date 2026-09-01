@@ -57,7 +57,7 @@ namespace Prestacontrol.Application.Services
         public async Task<LoginResponse?> LoginAsync(LoginRequest request)
         {
             var user = await _unitOfWork.Users.GetByUsernameAsync(request.Username);
-            if (user == null || user.PasswordHash != request.Password) // Simple check for demo, should be hashed
+            if (user == null || !user.IsActive || user.PasswordHash != request.Password) // Simple check for demo, should be hashed
                 return null;
 
             return new LoginResponse

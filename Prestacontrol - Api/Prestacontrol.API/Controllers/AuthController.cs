@@ -36,6 +36,7 @@ namespace Prestacontrol.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserDto userDto, [FromQuery] string password)
         {

@@ -13,6 +13,7 @@ import DelinquentLoansPage from './pages/DelinquentLoansPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import ClientsPage from './pages/ClientsPage';
+import UsersPage from './pages/UsersPage';
 
 import MainLayout from './components/layout/MainLayout';
 import UpdatePrompt from './components/ui/UpdatePrompt';
@@ -104,6 +105,7 @@ function AppRoutes() {
         } 
       />
       <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
