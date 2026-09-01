@@ -23,10 +23,10 @@ namespace Prestacontrol.Application.Services
             var localStartDate = request.StartDate.Kind == DateTimeKind.Utc ? request.StartDate.AddHours(-4) : request.StartDate;
 
             decimal totalInterest = request.Amount * (request.InterestRate / 100);
-            decimal totalToPay = request.Amount + totalInterest;
-            decimal installmentAmount = totalToPay / request.InstallmentsCount;
+            decimal totalToPay = request.Amount;
             decimal principalPerInstallment = request.Amount / request.InstallmentsCount;
             decimal interestPerInstallment = totalInterest / request.InstallmentsCount;
+            decimal installmentAmount = principalPerInstallment;
 
             var loan = new Loan
             {
@@ -183,7 +183,7 @@ namespace Prestacontrol.Application.Services
 
             // Recalculate totals
             var totalInterest = loan.Amount * (loan.InterestRate / 100);
-            loan.TotalToPay = loan.Amount + totalInterest;
+            loan.TotalToPay = loan.Amount;
             loan.BalanceDue = loan.TotalToPay;
 
             var existingInstallments = await _unitOfWork.Installments.FindAsync(i => i.LoanId == loanId);
@@ -192,7 +192,7 @@ namespace Prestacontrol.Application.Services
                 _unitOfWork.Installments.Delete(inst);
             }
 
-            var baseInstallmentAmount = loan.TotalToPay / loan.InstallmentsCount;
+            var baseInstallmentAmount = loan.Amount / loan.InstallmentsCount;
             var newInstallments = new List<Installment>();
             for (int i = 1; i <= loan.InstallmentsCount; i++)
             {

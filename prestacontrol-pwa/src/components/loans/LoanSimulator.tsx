@@ -71,7 +71,7 @@ const LoanSimulator: React.FC<LoanSimulatorProps> = ({ initialData, onSimulation
     }
 
     const totalInterest = amount * (interestRate / 100);
-    const total = Number(amount) + totalInterest;
+    const total = Number(amount);
     const installmentAmount = total / installments;
     const principalPerInst = amount / installments;
     const interestPerInst = totalInterest / installments;
@@ -181,7 +181,7 @@ const LoanSimulator: React.FC<LoanSimulatorProps> = ({ initialData, onSimulation
 
           <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-100/50 dark:border-blue-800/50 flex flex-col justify-center relative overflow-hidden group">
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all duration-500" />
-            <p className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 relative z-10">Total a Pagar</p>
+            <p className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 relative z-10">Capital a Pagar</p>
             <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-700 dark:from-blue-400 dark:to-indigo-400 relative z-10">
               ${totalToPay > 0 ? totalToPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </p>

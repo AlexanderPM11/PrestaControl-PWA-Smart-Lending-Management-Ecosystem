@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  // Production always uses the same-origin Nginx route. VITE_API_URL remains
+  // available for local development only.
+  baseURL: import.meta.env.DEV
+    ? (import.meta.env.VITE_API_URL || '/api')
+    : '/api',
 });
 
 api.interceptors.request.use((config) => {

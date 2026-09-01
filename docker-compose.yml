@@ -6,8 +6,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-    ports:
-      - "3307:3306"
+    networks:
+      - prestacontrol_internal
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -27,8 +27,10 @@ services:
       - ConnectionStrings__DefaultConnection=Server=db;Database=${MYSQL_DATABASE};User=root;Password=${MYSQL_ROOT_PASSWORD};
       - Telegram__BotToken=${TELEGRAM_BOT_TOKEN}
       - Telegram__AdminChatId=${TELEGRAM_ADMIN_CHAT_ID}
-    ports:
-      - "5112:8080"
+    expose:
+      - "8080"
+    networks:
+      - prestacontrol_internal
     depends_on:
       db:
         condition: service_healthy
@@ -38,13 +40,19 @@ services:
       context: ./prestacontrol-pwa
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=${VITE_API_URL}
+        - VITE_API_URL=/api
     container_name: prestacontrol-pwa
     restart: always
     ports:
       - "5173:80"
+    networks:
+      - prestacontrol_internal
     depends_on:
       - api
 
 volumes:
   db_data:
+
+networks:
+  prestacontrol_internal:
+    driver: bridge

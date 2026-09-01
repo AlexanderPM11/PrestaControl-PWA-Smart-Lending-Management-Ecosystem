@@ -8,7 +8,8 @@ const PaymentsPage: React.FC = () => {
   const [loans, setLoans] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
-  const [displayAmount, setDisplayAmount] = useState<string>('');
+  const [capitalAmount, setCapitalAmount] = useState<string>('');
+  const [interestAmount, setInterestAmount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -40,11 +41,13 @@ const PaymentsPage: React.FC = () => {
   };
 
   const handleProcessPayment = async () => {
-    const numAmount = parseFloat(displayAmount.replace(/,/g, ''));
-    if (!selectedLoan || numAmount <= 0) return;
+    const numCapital = parseFloat(capitalAmount.replace(/,/g, '')) || 0;
+    const numInterest = parseFloat(interestAmount.replace(/,/g, '')) || 0;
+    
+    if (!selectedLoan || (numCapital <= 0 && numInterest <= 0)) return;
 
-    if (numAmount > selectedLoan.balanceDue + 0.01) {
-      toast.warning(`El monto (${numAmount.toLocaleString()}) no puede ser mayor al saldo pendiente (${selectedLoan.balanceDue.toLocaleString()})`);
+    if (numCapital > selectedLoan.balanceDue + 0.01) {
+      toast.warning(`El abono a capital (${numCapital.toLocaleString()}) no puede ser mayor al saldo pendiente (${selectedLoan.balanceDue.toLocaleString()})`);
       return;
     }
 
@@ -54,14 +57,16 @@ const PaymentsPage: React.FC = () => {
     try {
       const response = await api.post(`/payments`, {
         loanId: selectedLoan.id,
-        amount: numAmount,
+        capitalAmount: numCapital,
+        interestAmount: numInterest,
         paymentMethod: 'Efectivo',
         notes: 'Pago recibido desde la PWA'
       });
       setTransactions(response.data);
       setSuccess(true);
       fetchPendingLoans();
-      setDisplayAmount('');
+      setCapitalAmount('');
+      setInterestAmount('');
       toast.success('Pago procesado correctamente');
     } catch (err) {
       console.error('Error processing payment:', err);
@@ -160,56 +165,83 @@ const PaymentsPage: React.FC = () => {
         <div className="space-y-6">
           {!success ? (
             <div className="bg-white rounded-[32px] border border-sage-100 shadow-sm p-6 space-y-6">
-              <div>
-                <label className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-2 ml-1">Monto a Recibir</label>
-                <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-bold text-sage-400">$</span>
-                  <input
-                    type="text"
-                    value={displayAmount}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.]/g, '');
-                      if (val === '') {
-                        setDisplayAmount('');
-                        return;
-                      }
-                      const parts = val.split('.');
-                      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                      setDisplayAmount(parts.join('.'));
-                    }}
-                    placeholder="0.00"
-                    className="input-field pl-10 text-3xl font-black font-display py-6"
-                  />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-2 ml-1">Abono a Capital</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-sage-400">$</span>
+                    <input
+                      type="text"
+                      value={capitalAmount}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                        if (val === '') {
+                          setCapitalAmount('');
+                          return;
+                        }
+                        const parts = val.split('.');
+                        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        setCapitalAmount(parts.join('.'));
+                      }}
+                      placeholder="0.00"
+                      className="input-field pl-9 text-2xl font-black font-display py-4"
+                    />
+                  </div>
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {[100, 500, 1000].map(val => (
-                    <button 
-                      key={val}
-                      onClick={() => setDisplayAmount(val.toLocaleString())}
-                      className="py-2.5 bg-sage-50 hover:bg-sage-100 rounded-xl text-xs font-bold transition-all text-sage-700 font-sans"
-                    >
-                      +${val.toLocaleString()}
-                    </button>
-                  ))}
-                  <button 
-                    onClick={() => setDisplayAmount(selectedLoan.balanceDue.toLocaleString())}
-                    className="col-span-3 py-3 bg-tangerine-50 text-tangerine-600 border border-tangerine-200 hover:bg-tangerine-100 rounded-xl text-xs font-black transition-all uppercase tracking-widest font-sans"
-                  >
-                    Saldar Préstamo (${selectedLoan.balanceDue.toLocaleString()})
-                  </button>
+                <div>
+                  <label className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-2 ml-1">Pago de Interés</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-sage-400">$</span>
+                    <input
+                      type="text"
+                      value={interestAmount}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                        if (val === '') {
+                          setInterestAmount('');
+                          return;
+                        }
+                        const parts = val.split('.');
+                        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        setInterestAmount(parts.join('.'));
+                      }}
+                      placeholder="0.00"
+                      className="input-field pl-9 text-2xl font-black font-display py-4"
+                    />
+                  </div>
                 </div>
               </div>
-
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {[100, 500, 1000].map(val => (
+                  <button 
+                    key={val}
+                    onClick={() => {
+                      const current = parseFloat(capitalAmount.replace(/,/g, '')) || 0;
+                      setCapitalAmount((current + val).toLocaleString());
+                    }}
+                    className="py-2.5 bg-sage-50 hover:bg-sage-100 rounded-xl text-xs font-bold transition-all text-sage-700 font-sans"
+                  >
+                    +${val.toLocaleString()}
+                  </button>
+                ))}
+                <button 
+                  onClick={() => setCapitalAmount(selectedLoan.balanceDue.toLocaleString())}
+                  className="col-span-3 py-3 bg-tangerine-50 text-tangerine-600 border border-tangerine-200 hover:bg-tangerine-100 rounded-xl text-xs font-black transition-all uppercase tracking-widest font-sans"
+                >
+                  Saldar Capital (${selectedLoan.balanceDue.toLocaleString()})
+                </button>
+              </div>
+              
               <div className="p-4 bg-sage-50 rounded-2xl flex gap-3 items-start border border-sage-100">
                 <Info className="text-sage-500 shrink-0 mt-0.5" size={18} />
                 <p className="text-xs text-sage-600 leading-relaxed font-medium">
-                  El sistema aplicará el pago automáticamente en cascada: moras {'>'} intereses {'>'} capital.
+                  El abono a capital descontará directamente del préstamo. El pago de interés no reduce el saldo de la deuda.
                 </p>
               </div>
 
               <button
                 onClick={handleProcessPayment}
-                disabled={isSubmitting || !displayAmount || parseFloat(displayAmount.replace(/,/g, '')) <= 0}
+                disabled={isSubmitting || (!capitalAmount && !interestAmount)}
                 className="w-full bg-financial-green text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-financial-green/30 transition-all active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:active:scale-100 font-sans"
               >
                 {isSubmitting ? (

@@ -23,76 +23,55 @@ namespace Prestacontrol.Application.Services
             var loan = await _unitOfWork.Loans.GetByIdAsync(request.LoanId);
             if (loan == null) throw new Exception("Préstamo no encontrado");
 
-            if (request.Amount > loan.BalanceDue + 0.01m) // Adding tiny buffer for rounding
-                throw new Exception($"El monto a pagar (${request.Amount}) supera el saldo pendiente (${loan.BalanceDue})");
+            if (request.CapitalAmount > loan.BalanceDue + 0.01m) // Adding tiny buffer for rounding
+                throw new Exception($"El abono a capital (${request.CapitalAmount}) supera el saldo pendiente (${loan.BalanceDue})");
 
-            var remainingAmount = request.Amount;
+            var remainingCapital = request.CapitalAmount;
             var transactions = new List<FinancialTransaction>();
 
-            // 1. Get pending installments ordered by date
-            var pendingInstallments = loan.Installments
-                .Where(i => i.Status != InstallmentStatus.Paid)
-                .OrderBy(i => i.DueDate)
-                .ToList();
-
-            foreach (var inst in pendingInstallments)
+            // 1. Process Interest
+            if (request.InterestAmount > 0)
             {
-                if (remainingAmount <= 0) break;
+                transactions.Add(CreateTransaction(loan.Id, userId, request.InterestAmount, "Interés", "Pago de interés libre"));
+            }
 
-                // A. Pay Late Fees first (if any)
-                if (inst.LateFeeAmount > 0)
+            // 2. Process Capital & Installments
+            if (remainingCapital > 0)
+            {
+                transactions.Add(CreateTransaction(loan.Id, userId, remainingCapital, "Capital", "Abono a capital"));
+
+                var pendingInstallments = loan.Installments
+                    .Where(i => i.Status != InstallmentStatus.Paid)
+                    .OrderBy(i => i.DueDate)
+                    .ToList();
+
+                foreach (var inst in pendingInstallments)
                 {
-                    var lateFeeToPay = Math.Min(remainingAmount, inst.LateFeeAmount);
-                    inst.LateFeeAmount -= lateFeeToPay;
-                    remainingAmount -= lateFeeToPay;
-                    
-                    transactions.Add(CreateTransaction(loan.Id, userId, lateFeeToPay, "Mora", $"Pago mora cuota #{inst.InstallmentNumber}"));
-                }
+                    if (remainingCapital <= 0) break;
 
-                if (remainingAmount <= 0) break;
+                    var unpaidPrincipal = inst.Amount - inst.PaidAmount;
+                    if (unpaidPrincipal > 0)
+                    {
+                        var principalToPay = Math.Min(remainingCapital, unpaidPrincipal);
+                        inst.PaidAmount += principalToPay;
+                        remainingCapital -= principalToPay;
+                    }
 
-                // B. Pay Interest (Interest is paid before Principal)
-                var interestPaid = Math.Min(inst.PaidAmount, inst.InterestAmount);
-                var unpaidInterest = inst.InterestAmount - interestPaid;
-                
-                if (unpaidInterest > 0)
-                {
-                    var interestToPay = Math.Min(remainingAmount, unpaidInterest);
-                    inst.PaidAmount += interestToPay;
-                    remainingAmount -= interestToPay;
-                    
-                    transactions.Add(CreateTransaction(loan.Id, userId, interestToPay, "Interés", $"Pago interés cuota #{inst.InstallmentNumber}"));
-                }
-
-                if (remainingAmount <= 0) break;
-
-                // C. Pay Principal
-                var principalPaid = Math.Max(0, inst.PaidAmount - inst.InterestAmount);
-                var unpaidPrincipal = inst.PrincipalAmount - principalPaid;
-                
-                if (unpaidPrincipal > 0)
-                {
-                    var principalToPay = Math.Min(remainingAmount, unpaidPrincipal);
-                    inst.PaidAmount += principalToPay;
-                    remainingAmount -= principalToPay;
-                    
-                    transactions.Add(CreateTransaction(loan.Id, userId, principalToPay, "Capital", $"Pago capital cuota #{inst.InstallmentNumber}"));
-                }
-
-                // Update Status
-                if (inst.PaidAmount >= inst.Amount)
-                {
-                    inst.Status = InstallmentStatus.Paid;
-                    inst.PaidAt = Prestacontrol.Application.Common.DRTimeProvider.Now;
-                }
-                else if (inst.PaidAmount > 0)
-                {
-                    inst.Status = InstallmentStatus.Partial;
+                    // Update Status
+                    if (inst.PaidAmount >= inst.Amount)
+                    {
+                        inst.Status = InstallmentStatus.Paid;
+                        inst.PaidAt = Prestacontrol.Application.Common.DRTimeProvider.Now;
+                    }
+                    else if (inst.PaidAmount > 0)
+                    {
+                        inst.Status = InstallmentStatus.Partial;
+                    }
                 }
             }
 
             // Update Loan Balance
-            loan.BalanceDue -= request.Amount;
+            loan.BalanceDue -= request.CapitalAmount;
             if (loan.BalanceDue <= 0)
             {
                 loan.Status = LoanStatus.Paid;

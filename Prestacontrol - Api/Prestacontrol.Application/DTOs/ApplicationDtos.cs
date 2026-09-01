@@ -58,7 +58,9 @@ namespace Prestacontrol.Application.DTOs
     public class PaymentRequest
     {
         public int LoanId { get; set; }
-        public decimal Amount { get; set; }
+        public decimal CapitalAmount { get; set; }
+        public decimal InterestAmount { get; set; }
+        public decimal Amount => CapitalAmount + InterestAmount;
         public string PaymentMethod { get; set; } = "Efectivo";
         public string? Notes { get; set; }
         public DateTime PaymentDate { get; set; } = Prestacontrol.Application.Common.DRTimeProvider.Now;

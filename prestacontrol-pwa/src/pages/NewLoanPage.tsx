@@ -142,9 +142,9 @@ const NewLoanPage: React.FC = () => {
 
           {amount && interestRate !== '' && (
             <div className="mt-4 p-6 bg-tangerine-50 rounded-3xl border-2 border-tangerine-200 flex flex-col justify-center text-center">
-              <p className="text-xs font-bold tracking-widest text-tangerine-600 mb-1 uppercase font-sans">Total a Pagar</p>
+              <p className="text-xs font-bold tracking-widest text-tangerine-600 mb-1 uppercase font-sans">Interés Estimado por Cuota</p>
               <p className="text-4xl font-black text-tangerine-500 font-display">
-                ${(Number(amount) + (Number(amount) * (Number(interestRate) / 100))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${((Number(amount) * (Number(interestRate) / 100))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
           )}
