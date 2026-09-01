@@ -10,6 +10,7 @@ const PaymentsPage: React.FC = () => {
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
   const [capitalAmount, setCapitalAmount] = useState<string>('');
   const [interestAmount, setInterestAmount] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -60,13 +61,14 @@ const PaymentsPage: React.FC = () => {
         capitalAmount: numCapital,
         interestAmount: numInterest,
         paymentMethod: 'Efectivo',
-        notes: 'Pago recibido desde la PWA'
+        notes: notes.trim() || null
       });
       setTransactions(response.data);
       setSuccess(true);
       fetchPendingLoans();
       setCapitalAmount('');
       setInterestAmount('');
+      setNotes('');
       toast.success('Pago procesado correctamente');
     } catch (err) {
       console.error('Error processing payment:', err);
@@ -237,6 +239,20 @@ const PaymentsPage: React.FC = () => {
                 <p className="text-xs text-sage-600 leading-relaxed font-medium">
                   El abono a capital descontará directamente del préstamo. El pago de interés no reduce el saldo de la deuda.
                 </p>
+              </div>
+
+              <div>
+                <label htmlFor="payment-notes" className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-2 ml-1">Comentario u observación <span className="normal-case font-medium tracking-normal text-sage-400">(opcional)</span></label>
+                <textarea
+                  id="payment-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Ej.: Pago recibido por transferencia o acuerdo especial..."
+                  className="input-field resize-none text-sm leading-relaxed"
+                />
+                <p className="mt-1 text-right text-[10px] font-medium text-sage-400">{notes.length}/500</p>
               </div>
 
               <button

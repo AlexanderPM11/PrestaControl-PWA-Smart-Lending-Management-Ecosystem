@@ -9,7 +9,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Updates are coordinated by UpdatePrompt using version.json. This
+      // avoids a waiting service-worker loop behind reverse proxies.
+      selfDestroying: true,
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Prestacontrol PWA',

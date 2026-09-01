@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Wallet, UserCircle2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   const isHome = location.pathname === '/dashboard' || location.pathname === '/';
 
@@ -21,8 +23,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-sage-100 flex items-center justify-center font-sans">
-      <div className="w-full max-w-md bg-sage-50 min-h-screen md:min-h-[850px] md:h-[90vh] md:rounded-[40px] md:shadow-2xl md:shadow-sage-900/20 md:border-8 md:border-white relative overflow-hidden flex flex-col">
+    <div className="h-dvh overflow-hidden bg-sage-100 flex items-center justify-center font-sans">
+      <div className="w-full max-w-md bg-sage-50 h-dvh md:h-[90vh] md:rounded-[40px] md:shadow-2xl md:shadow-sage-900/20 md:border-8 md:border-white relative overflow-hidden flex flex-col">
         
         {/* Header */}
         <header className="px-6 pt-12 pb-4 flex items-center justify-between z-10 sticky top-0 bg-sage-50/90 backdrop-blur-md">
@@ -42,7 +44,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
           {isHome && (
             <button 
-              onClick={logout} 
+              onClick={() => setIsLogoutDialogOpen(true)}
               className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-sage-900 hover:text-tangerine-500 transition-colors border border-sage-200"
               title="Cerrar Sesión"
             >
@@ -52,32 +54,48 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto pb-32 px-6 scrollbar-hide">
+        <main className="min-h-0 flex-1 overflow-y-auto pb-36 px-6 scrollbar-hide">
           {children}
         </main>
 
         {/* Bottom Navigation */}
-        <nav className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-2xl border border-sage-200 px-6 py-4 flex justify-between items-center z-40 rounded-[32px] shadow-2xl shadow-sage-900/10">
+        <nav className="fixed inset-x-0 bottom-0 z-40 w-full bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_32px_rgba(41,51,47,0.16)] backdrop-blur-2xl">
+          <div className="mx-auto flex w-full max-w-md items-center justify-around gap-2">
           {navItems.map((item, idx) => {
             const isActive = location.pathname === item.path || (item.path === '/loans' && location.pathname.startsWith('/loans'));
             return (
               <Link 
                 key={idx} 
                 to={item.path} 
-                className={`flex flex-col items-center gap-1.5 transition-all w-16 ${
+                className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 transition-all active:scale-95 ${
                   isActive 
-                    ? 'text-tangerine-500 transform scale-110' 
-                    : 'text-sage-400 hover:text-sage-900'
+                    ? 'bg-tangerine-50 text-tangerine-500 shadow-sm shadow-tangerine-500/10' 
+                    : 'text-sage-400 hover:bg-sage-50 hover:text-sage-900'
                 }`}
               >
                 <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-[10px] font-bold font-display uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+                <span className="text-[10px] font-bold font-display uppercase tracking-widest">
                   {item.label}
                 </span>
               </Link>
             );
           })}
+          </div>
         </nav>
+
+        <ConfirmDialog
+          isOpen={isLogoutDialogOpen}
+          type="warning"
+          title="¿Cerrar sesión?"
+          message="Tu sesión permanecerá segura. Podrás volver a entrar cuando quieras con tus credenciales."
+          confirmText="Sí, cerrar sesión"
+          cancelText="Cancelar"
+          onConfirm={() => {
+            setIsLogoutDialogOpen(false);
+            logout();
+          }}
+          onCancel={() => setIsLogoutDialogOpen(false)}
+        />
       </div>
     </div>
   );

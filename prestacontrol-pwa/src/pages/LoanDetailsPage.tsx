@@ -15,6 +15,7 @@ const LoanDetailsPage: React.FC = () => {
   const [editingPayment, setEditingPayment] = useState<any>(null);
   const [editCapital, setEditCapital] = useState('');
   const [editInterest, setEditInterest] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const toast = useToast();
 
@@ -59,7 +60,7 @@ const LoanDetailsPage: React.FC = () => {
       await api.put(`/payments/${editingPayment.id}`, {
         capitalAmount: numCap,
         interestAmount: numInt,
-        notes: editingPayment.notes // keep existing notes
+        notes: editNotes.trim() || null
       });
       toast.success('Pago actualizado correctamente');
       setEditingPayment(null);
@@ -208,6 +209,7 @@ const LoanDetailsPage: React.FC = () => {
                           setEditingPayment(payment);
                           setEditCapital(payment.capitalAmount?.toString() || '0');
                           setEditInterest(payment.interestAmount?.toString() || '0');
+                          setEditNotes(payment.notes || '');
                         }}
                         className="text-sage-400 hover:text-tangerine-500 mt-1 transition-colors float-right"
                         title="Editar Pago"
@@ -227,7 +229,7 @@ const LoanDetailsPage: React.FC = () => {
                       <CreditCard size={10} /> {payment.paymentMethod}
                     </span>
                     {payment.notes && (
-                      <p className="text-xs text-sage-500 italic max-w-[150px] truncate" title={payment.notes}>
+                      <p className="text-xs text-sage-500 italic max-w-[190px] truncate" title={payment.notes}>
                         {payment.notes}
                       </p>
                     )}
@@ -348,6 +350,19 @@ const LoanDetailsPage: React.FC = () => {
                   }}
                   className="w-full px-4 py-3 bg-sage-50 border border-sage-200 rounded-xl font-bold focus:ring-2 focus:ring-tangerine-500 outline-none text-sage-900"
                 />
+              </div>
+              <div>
+                <label htmlFor="edit-payment-notes" className="block text-xs font-bold text-sage-500 uppercase tracking-widest font-sans mb-1">Comentario u observación <span className="normal-case font-medium tracking-normal text-sage-400">(opcional)</span></label>
+                <textarea
+                  id="edit-payment-notes"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Añade una nota sobre este pago..."
+                  className="w-full resize-none rounded-xl border border-sage-200 bg-sage-50 px-4 py-3 text-sm font-medium leading-relaxed text-sage-900 outline-none focus:ring-2 focus:ring-tangerine-500"
+                />
+                <p className="mt-1 text-right text-[10px] font-medium text-sage-400">{editNotes.length}/500</p>
               </div>
             </div>
 

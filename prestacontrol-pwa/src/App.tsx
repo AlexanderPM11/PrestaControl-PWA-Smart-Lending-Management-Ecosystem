@@ -14,6 +14,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 
 import MainLayout from './components/layout/MainLayout';
+import UpdatePrompt from './components/ui/UpdatePrompt';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
@@ -113,6 +114,7 @@ function App() {
       <AuthProvider>
         <Router>
           <AppRoutes />
+          <UpdatePrompt />
         </Router>
       </AuthProvider>
     </ToastProvider>

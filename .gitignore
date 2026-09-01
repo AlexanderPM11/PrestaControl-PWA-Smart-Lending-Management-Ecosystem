@@ -13,6 +13,7 @@
 # === Node.js / React / Vite ===
 node_modules/
 dist/
+prestacontrol-pwa/public/version.json
 dist-ssr/
 *.local
 .eslintcache
