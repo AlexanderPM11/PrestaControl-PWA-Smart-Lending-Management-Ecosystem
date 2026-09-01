@@ -13,6 +13,8 @@ using FluentValidation.AspNetCore;
 using Prestacontrol.Application.Validators;
 using FluentValidation;
 using System.Text.Json.Serialization;
+using Prestacontrol.API.Services;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,11 @@ builder.Services.AddScoped<ILoanService, LoanService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<ITelegramService, TelegramService>();
 builder.Services.AddHttpClient<ITelegramService, TelegramService>();
+builder.Services.AddHttpClient();
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/root/.aspnet/DataProtection-Keys"))
+    .SetApplicationName("PrestaControl");
+builder.Services.AddHostedService<GoogleDriveBackupWorker>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDelinquencyService, DelinquencyService>();
 

@@ -27,6 +27,27 @@ services:
       - ConnectionStrings__DefaultConnection=Server=db;Database=${MYSQL_DATABASE};User=root;Password=${MYSQL_ROOT_PASSWORD};
       - Telegram__BotToken=${TELEGRAM_BOT_TOKEN}
       - Telegram__AdminChatId=${TELEGRAM_ADMIN_CHAT_ID}
+      - BACKUP_ENABLED=${BACKUP_ENABLED:-false}
+      - BACKUP_RUN_ON_STARTUP=${BACKUP_RUN_ON_STARTUP:-false}
+      - BACKUP_TIME=${BACKUP_TIME:-03:00}
+      - BACKUP_TIME_ZONE=${BACKUP_TIME_ZONE:-UTC}
+      - BACKUP_INTERVAL_HOURS=${BACKUP_INTERVAL_HOURS:-0}
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-90}
+      - BACKUP_GOOGLE_DRIVE_FOLDER_ID=${BACKUP_GOOGLE_DRIVE_FOLDER_ID:-}
+      - BACKUP_GOOGLE_CLIENT_ID=${BACKUP_GOOGLE_CLIENT_ID:-}
+      - BACKUP_GOOGLE_CLIENT_SECRET=${BACKUP_GOOGLE_CLIENT_SECRET:-}
+      - BACKUP_GOOGLE_REFRESH_TOKEN=${BACKUP_GOOGLE_REFRESH_TOKEN:-}
+      - BACKUP_GOOGLE_REDIRECT_URI=${BACKUP_GOOGLE_REDIRECT_URI:-https://prestacontrol.apolanco.com/api/backups/google/callback}
+      - BACKUP_ENCRYPTION_PASSWORD=${BACKUP_ENCRYPTION_PASSWORD:-}
+      - BACKUP_DB_HOST=${BACKUP_DB_HOST:-db}
+      - BACKUP_DB_PORT=${BACKUP_DB_PORT:-3306}
+      - BACKUP_DB_USER=${BACKUP_DB_USER:-root}
+      - BACKUP_DB_PASSWORD=${BACKUP_DB_PASSWORD:-${MYSQL_ROOT_PASSWORD}}
+      - BACKUP_DB_NAME=${BACKUP_DB_NAME:-${MYSQL_DATABASE}}
+      - BACKUP_SOURCE_PATH=/backup/source
+    volumes:
+      - ${BACKUP_SOURCE_PATH:-.}:/backup/source:ro
+      - api_data_protection_keys:/root/.aspnet/DataProtection-Keys
     expose:
       - "8080"
     networks:
@@ -52,6 +73,7 @@ services:
 
 volumes:
   db_data:
+  api_data_protection_keys:
 
 networks:
   prestacontrol_internal:

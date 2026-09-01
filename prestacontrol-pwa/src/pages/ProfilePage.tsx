@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCircle2, KeyRound, LogOut, Check } from 'lucide-react';
+import { UserCircle2, KeyRound, LogOut, CloudBackup, Check, Link2, Unlink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../api/api';
@@ -15,6 +15,46 @@ const ProfilePage: React.FC = () => {
 
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [backupEnabled, setBackupEnabled] = useState(false);
+  const [backupConfigured, setBackupConfigured] = useState(false);
+  const [googleConfigured, setGoogleConfigured] = useState(false);
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [isUpdatingBackup, setIsUpdatingBackup] = useState(false);
+
+  React.useEffect(() => {
+    api.get('/backups/settings').then(({ data }) => { setBackupEnabled(data.enabled); setBackupConfigured(data.connected); setGoogleConfigured(data.googleConfigured); }).catch(() => undefined);
+    const status = new URLSearchParams(window.location.search).get('backup');
+    if (status === 'connected') toast.success('Google Drive conectado correctamente.');
+    if (status && status !== 'connected') toast.error('No se pudo conectar Google Drive. Inténtalo nuevamente.');
+    if (status) window.history.replaceState({}, '', window.location.pathname);
+  }, []);
+
+  const connectGoogleDrive = async () => {
+    try {
+      setIsConnectingGoogle(true);
+      const { data } = await api.get('/backups/google/connect');
+      window.location.assign(data.url);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'No se pudo iniciar la conexión con Google Drive.');
+      setIsConnectingGoogle(false);
+    }
+  };
+
+  const disconnectGoogleDrive = async () => {
+    try {
+      await api.delete('/backups/google/disconnect');
+      setBackupConfigured(false);
+      setBackupEnabled(false);
+      toast.success('Google Drive desconectado.');
+    } catch { toast.error('No se pudo desconectar Google Drive.'); }
+  };
+
+  const toggleBackups = async () => {
+    if (!backupConfigured) { toast.warning('El backup todavía no está configurado en Docker.'); return; }
+    try { setIsUpdatingBackup(true); const next = !backupEnabled; await api.put('/backups/settings', { enabled: next }); setBackupEnabled(next); toast.success(next ? 'Backups activados.' : 'Backups desactivados.'); }
+    catch (err: any) { toast.error(err.response?.data?.message || 'No se pudo actualizar la configuración de backups.'); }
+    finally { setIsUpdatingBackup(false); }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +140,20 @@ const ProfilePage: React.FC = () => {
             {isSubmittingProfile ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Actualizar Nombre'}
           </button>
         </form>
+      </div>
+
+      <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
+        <div className="flex items-start justify-between gap-4">
+          <div><h3 className="text-lg font-black text-sage-900 font-display flex items-center gap-2"><CloudBackup size={20} className="text-tangerine-500" /> Backups automáticos</h3><p className="mt-1 text-sm font-medium text-sage-500">Copia cifrada de la aplicación en Google Drive.</p></div>
+          {backupConfigured && <button type="button" onClick={toggleBackups} disabled={isUpdatingBackup} aria-label="Activar o desactivar backups" className={`relative h-7 w-12 shrink-0 rounded-full p-1 transition-colors ${backupEnabled ? 'bg-tangerine-500' : 'bg-sage-200'} disabled:cursor-not-allowed disabled:opacity-50`}><span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${backupEnabled ? 'translate-x-5' : 'translate-x-0'}`} /></button>}
+        </div>
+        {!backupConfigured ? <>
+          <div className={`mt-4 flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-bold ${googleConfigured ? 'bg-amber-50 text-amber-700' : 'bg-sage-50 text-sage-600'}`}><CloudBackup size={15} />{googleConfigured ? 'Conecta la cuenta que guardará tus copias.' : 'Google Drive necesita configuración en el entorno.'}</div>
+          <button type="button" onClick={connectGoogleDrive} disabled={!googleConfigured || isConnectingGoogle} className="mt-3 w-full rounded-2xl bg-tangerine-500 px-4 py-3 font-black text-white shadow-lg shadow-tangerine-500/20 transition hover:bg-tangerine-600 disabled:cursor-not-allowed disabled:opacity-50"><Link2 size={17} className="mr-2 inline" />{isConnectingGoogle ? 'Abriendo Google…' : 'Conectar Google Drive'}</button>
+        </> : <>
+          <div className="mt-4 flex items-center gap-2 rounded-2xl bg-sage-50 px-3 py-2 text-xs font-bold text-sage-600"><Check size={15} />{backupEnabled ? 'Activo. Se ejecutará según el horario configurado.' : 'Cuenta conectada, pero backups desactivados.'}</div>
+          <button type="button" onClick={disconnectGoogleDrive} className="mt-3 text-xs font-bold text-sage-500 hover:text-red-600"><Unlink size={14} className="mr-1 inline" />Desconectar Google Drive</button>
+        </>}
       </div>
 
       <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
