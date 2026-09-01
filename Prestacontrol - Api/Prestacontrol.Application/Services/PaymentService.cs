@@ -83,7 +83,7 @@ namespace Prestacontrol.Application.Services
                 if (inst.PaidAmount >= inst.Amount)
                 {
                     inst.Status = InstallmentStatus.Paid;
-                    inst.PaidAt = DateTime.Now;
+                    inst.PaidAt = Prestacontrol.Application.Common.DRTimeProvider.Now;
                 }
                 else if (inst.PaidAmount > 0)
                 {
@@ -120,7 +120,7 @@ namespace Prestacontrol.Application.Services
                 Category = "Cobro",
                 Description = $"Cobro de préstamo #{loan.Id} - Cliente: {loan.ClientName}",
                 UserId = userId,
-                Date = DateTime.Now
+                Date = Prestacontrol.Application.Common.DRTimeProvider.Now
             });
 
             // Save all transactions
@@ -150,7 +150,7 @@ namespace Prestacontrol.Application.Services
                 Amount = amount,
                 Type = type,
                 Description = desc,
-                Date = DateTime.Now
+                Date = Prestacontrol.Application.Common.DRTimeProvider.Now
             };
         }
     }

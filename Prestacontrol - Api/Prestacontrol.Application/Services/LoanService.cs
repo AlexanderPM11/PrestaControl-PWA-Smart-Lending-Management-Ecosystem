@@ -66,7 +66,7 @@ namespace Prestacontrol.Application.Services
                 Category = "Préstamo",
                 Description = $"Desembolso préstamo a cliente: {request.ClientName}",
                 UserId = userId,
-                Date = DateTime.Now
+                Date = Prestacontrol.Application.Common.DRTimeProvider.Now
             });
 
             await _unitOfWork.CompleteAsync();
@@ -101,7 +101,7 @@ namespace Prestacontrol.Application.Services
                 LoanId = loanId,
                 Action = "Anulación",
                 ChangesDescription = "El préstamo fue anulado manualmente por el administrador.",
-                Date = DateTime.Now
+                Date = Prestacontrol.Application.Common.DRTimeProvider.Now
             });
 
             await _unitOfWork.CompleteAsync();
@@ -123,7 +123,7 @@ namespace Prestacontrol.Application.Services
                 LoanId = loanId,
                 Action = "Reactivación",
                 ChangesDescription = "El préstamo fue reactivado tras haber sido anulado.",
-                Date = DateTime.Now
+                Date = Prestacontrol.Application.Common.DRTimeProvider.Now
             });
 
             await _unitOfWork.CompleteAsync();
@@ -161,7 +161,7 @@ namespace Prestacontrol.Application.Services
                     LoanId = loanId,
                     Action = "Edición General",
                     ChangesDescription = $"Se actualizó el nombre del cliente a: {request.ClientName}. Los campos financieros no fueron modificados porque el préstamo tiene cobros.",
-                    Date = DateTime.Now
+                    Date = Prestacontrol.Application.Common.DRTimeProvider.Now
                 });
 
                 await _unitOfWork.CompleteAsync();
@@ -216,7 +216,7 @@ namespace Prestacontrol.Application.Services
                 LoanId = loanId,
                 Action = "Reestructuración",
                 ChangesDescription = $"Cambio completo de condiciones. ANTES: [{oldValues}] | AHORA: [{newValues}]",
-                Date = DateTime.Now
+                Date = Prestacontrol.Application.Common.DRTimeProvider.Now
             });
 
             await _unitOfWork.CompleteAsync();

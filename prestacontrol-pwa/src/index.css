@@ -1,44 +1,57 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #f0f9ff;
-  --color-primary-100: #e0f2fe;
-  --color-primary-200: #bae6fd;
-  --color-primary-300: #7dd3fc;
-  --color-primary-400: #38bdf8;
-  --color-primary-500: #0ea5e9;
-  --color-primary-600: #0284c7;
-  --color-primary-700: #0369a1;
-  --color-primary-800: #075985;
-  --color-primary-900: #0c4a6e;
-  --color-primary-950: #082f49;
+  --color-sage-50: #F7F9F8;
+  --color-sage-100: #E8EDE9;
+  --color-sage-200: #D1DDD8;
+  --color-sage-300: #B2C7BF;
+  --color-sage-400: #93B0A5;
+  --color-sage-500: #82998F;
+  --color-sage-600: #5C766C;
+  --color-sage-700: #4B5F57;
+  --color-sage-800: #3D4D47;
+  --color-sage-900: #29332F;
+  --color-sage-950: #1C2421;
+
+  --color-tangerine-400: #FF8559;
+  --color-tangerine-500: #FF6B35;
+  --color-tangerine-600: #E65A29;
 
   --color-financial-green: #10b981;
   --color-financial-red: #ef4444;
-  --color-financial-gold: #f59e0b;
-  --color-financial-dark: #1e293b;
 
-  --font-sans: "Inter", "sans-serif";
+  --font-sans: "DM Sans", "sans-serif";
+  --font-display: "Outfit", "sans-serif";
 }
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply bg-sage-50 text-sage-900 font-sans antialiased;
     -webkit-tap-highlight-color: transparent;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors active:scale-95 flex items-center justify-center gap-2;
+    @apply bg-tangerine-500 text-white px-4 py-3 rounded-2xl font-bold font-display hover:bg-tangerine-600 transition-colors active:scale-95 flex items-center justify-center gap-2 w-full shadow-lg shadow-tangerine-500/30;
   }
   
   .card {
-    @apply bg-white p-4 rounded-xl shadow-sm border border-slate-100;
+    @apply bg-white p-5 rounded-3xl shadow-xl shadow-sage-900/5 border border-sage-100;
   }
 
   .input-field {
-    @apply w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
+    @apply w-full px-5 py-4 bg-sage-50 border border-sage-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-tangerine-500 focus:border-transparent transition-all text-sage-900 font-medium;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 

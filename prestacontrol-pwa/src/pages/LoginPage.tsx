@@ -28,7 +28,10 @@ const LoginPage = () => {
     setError(null);
     try {
       const response = await api.post('/Auth/login', data);
-      login(response.data.user, response.data.token);
+      // The ASP.NET Core API returns uppercase properties because PropertyNamingPolicy is null
+      const user = response.data.User || response.data.user;
+      const token = response.data.Token || response.data.token;
+      login(user, token);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al iniciar sesión');

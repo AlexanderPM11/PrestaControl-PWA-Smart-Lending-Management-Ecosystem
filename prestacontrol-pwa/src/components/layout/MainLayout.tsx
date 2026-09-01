@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CreditCard, DollarSign, LogOut } from 'lucide-react';
+import { LayoutDashboard, Wallet, UserCircle2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface MainLayoutProps {
@@ -12,74 +12,79 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isHome = location.pathname === '/dashboard' || location.pathname === '/';
+
   const navItems = [
     { label: 'Inicio', icon: LayoutDashboard, path: '/dashboard' },
-
-    { label: 'Préstamos', icon: LoansPagePath(location.pathname), path: '/loans' },
-    { label: 'Cobros', icon: DollarSign, path: '/payments' },
+    { label: 'Préstamos', icon: Wallet, path: '/loans' },
+    { label: 'Perfil', icon: UserCircle2, path: '/profile' }, // Replace logout with profile placeholder or keep logout
   ];
 
-  function LoansPagePath(path: string) {
-    if (path.startsWith('/loans')) return CreditCard;
-    return CreditCard;
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Shared Header */}
-      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-4 shadow-sm flex items-center justify-between sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <LayoutDashboard size={18} className="text-white" />
-          </div>
-          <span className="font-bold text-slate-800 dark:text-white">PrestaControl</span>
-        </div>
+    <div className="min-h-screen bg-sage-100 flex items-center justify-center font-sans">
+      <div className="w-full max-w-md bg-sage-50 min-h-screen md:min-h-[850px] md:h-[90vh] md:rounded-[40px] md:shadow-2xl md:shadow-sage-900/20 md:border-8 md:border-white relative overflow-hidden flex flex-col">
         
-        <div className="flex items-center gap-4">
-          <div className="hidden md:block text-right">
-            <p className="text-sm font-bold text-slate-900 dark:text-white">{user?.fullName}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Administrador</p>
-          </div>
-          <button 
-            onClick={logout} 
-            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-            title="Cerrar Sesión"
-          >
-            <LogOut size={20} />
-          </button>
-        </div>
-      </header>
-
-      {/* Page Content */}
-      <main className="pb-24">
-        {children}
-      </main>
-
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/20 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-40 rounded-[24px] shadow-2xl shadow-slate-900/10 min-w-[320px] md:min-w-[400px]">
-        {navItems.map((item, idx) => {
-          const isActive = location.pathname === item.path || (item.path === '/loans' && location.pathname.startsWith('/loans'));
-          return (
-            <Link 
-              key={idx} 
-              to={item.path} 
-              className={`flex flex-col items-center gap-1 transition-all px-4 py-1 rounded-xl ${
-                isActive 
-                  ? 'text-blue-600 dark:text-blue-400 transform scale-110' 
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-              }`}
+        {/* Header */}
+        <header className="px-6 pt-12 pb-4 flex items-center justify-between z-10 sticky top-0 bg-sage-50/90 backdrop-blur-md">
+          {isHome ? (
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-sage-500 uppercase tracking-widest">Hola,</span>
+              <span className="text-2xl font-black text-sage-900 font-display">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
+            </div>
+          ) : (
+            <button 
+              onClick={() => navigate(-1)}
+              className="p-3 bg-white rounded-full shadow-sm text-sage-900 hover:bg-sage-100 transition-colors"
             >
-              <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-              <span className={`text-[10px] font-black uppercase tracking-tighter ${isActive ? 'opacity-100' : 'opacity-60'}`}>
-                {item.label}
-              </span>
-              {isActive && (
-                <div className="absolute -bottom-1 w-1 h-1 bg-blue-600 rounded-full shadow-lg shadow-blue-500/50" />
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+              <ArrowLeft size={24} />
+            </button>
+          )}
+
+          {isHome && (
+            <button 
+              onClick={logout} 
+              className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm text-sage-900 hover:text-tangerine-500 transition-colors border border-sage-200"
+              title="Cerrar Sesión"
+            >
+              <span className="font-display font-black text-lg">{user?.fullName?.charAt(0)}</span>
+            </button>
+          )}
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto pb-32 px-6 scrollbar-hide">
+          {children}
+        </main>
+
+        {/* Bottom Navigation */}
+        <nav className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-2xl border border-sage-200 px-6 py-4 flex justify-between items-center z-40 rounded-[32px] shadow-2xl shadow-sage-900/10">
+          {navItems.map((item, idx) => {
+            const isActive = location.pathname === item.path || (item.path === '/loans' && location.pathname.startsWith('/loans'));
+            return (
+              <Link 
+                key={idx} 
+                to={item.path === '/profile' ? '#' : item.path} 
+                onClick={(e) => {
+                  if(item.path === '/profile') {
+                    e.preventDefault();
+                    logout();
+                  }
+                }}
+                className={`flex flex-col items-center gap-1.5 transition-all w-16 ${
+                  isActive 
+                    ? 'text-tangerine-500 transform scale-110' 
+                    : 'text-sage-400 hover:text-sage-900'
+                }`}
+              >
+                <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[10px] font-bold font-display uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 };

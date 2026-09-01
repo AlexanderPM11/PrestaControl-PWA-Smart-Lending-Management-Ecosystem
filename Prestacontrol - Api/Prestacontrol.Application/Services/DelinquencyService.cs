@@ -19,7 +19,7 @@ namespace Prestacontrol.Application.Services
 
         public async Task<int> UpdateDelinquencyStatusAsync()
         {
-            var today = DateTime.Now.Date;
+            var today = Prestacontrol.Application.Common.DRTimeProvider.Now.Date;
             var loans = await _unitOfWork.Loans.FindAsync(l => l.Status == LoanStatus.Active || l.Status == LoanStatus.Overdue);
             int updatedCount = 0;
 

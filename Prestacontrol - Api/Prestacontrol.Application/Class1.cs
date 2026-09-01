@@ -1,4 +1,4 @@
-﻿namespace Prestacontrol.Application;
+namespace Prestacontrol.Application;
 
 public class Class1
 {

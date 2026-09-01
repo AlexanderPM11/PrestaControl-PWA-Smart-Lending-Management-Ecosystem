@@ -32,7 +32,7 @@ namespace Prestacontrol.Application.Services
                 _config["Jwt:Issuer"],
                 _config["Jwt:Audience"],
                 claims,
-                expires: DateTime.Now.AddDays(7),
+                expires: Prestacontrol.Application.Common.DRTimeProvider.Now.AddDays(7),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

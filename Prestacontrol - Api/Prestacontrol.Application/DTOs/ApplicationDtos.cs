@@ -61,7 +61,7 @@ namespace Prestacontrol.Application.DTOs
         public decimal Amount { get; set; }
         public string PaymentMethod { get; set; } = "Efectivo";
         public string? Notes { get; set; }
-        public DateTime PaymentDate { get; set; } = DateTime.Now;
+        public DateTime PaymentDate { get; set; } = Prestacontrol.Application.Common.DRTimeProvider.Now;
     }
 
     public class PaymentDto

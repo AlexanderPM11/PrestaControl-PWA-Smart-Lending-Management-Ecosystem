@@ -23,7 +23,6 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
 
 // EF Core & MySQL
