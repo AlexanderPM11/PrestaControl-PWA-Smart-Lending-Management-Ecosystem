@@ -12,27 +12,27 @@ export default defineConfig({
       // Updates are coordinated by UpdatePrompt using version.json. This
       // avoids a waiting service-worker loop behind reverse proxies.
       selfDestroying: true,
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'pwa-icon.jpg'],
       manifest: {
         name: 'Prestacontrol PWA',
         short_name: 'Prestacontrol',
         description: 'Sistema Administrativo para Préstamos Personales',
-        theme_color: '#0ea5e9',
+        theme_color: '#3D4D47',
         icons: [
           {
-            src: 'favicon.svg',
+            src: 'pwa-icon.jpg',
             sizes: '192x192',
-            type: 'image/svg+xml'
+            type: 'image/jpeg'
           },
           {
-            src: 'favicon.svg',
+            src: 'pwa-icon.jpg',
             sizes: '512x512',
-            type: 'image/svg+xml'
+            type: 'image/jpeg'
           },
           {
-            src: 'favicon.svg',
+            src: 'pwa-icon.jpg',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/jpeg',
             purpose: 'any maskable'
           }
         ]

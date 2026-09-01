@@ -19,6 +19,7 @@ namespace Prestacontrol.Domain.Interfaces
 
 
     public interface ILoanRepository : IGenericRepository<Entities.Loan> { }
+    public interface IClientRepository : IGenericRepository<Entities.Client> { }
     public interface IInstallmentRepository : IGenericRepository<Entities.Installment> { }
     public interface IPaymentRepository : IGenericRepository<Entities.Payment> { }
     public interface ICashFlowRepository : IGenericRepository<Entities.CashFlow> { }
@@ -30,6 +31,7 @@ namespace Prestacontrol.Domain.Interfaces
         IUserRepository Users { get; }
 
         ILoanRepository Loans { get; }
+        IClientRepository Clients { get; }
         IInstallmentRepository Installments { get; }
         IPaymentRepository Payments { get; }
         ICashFlowRepository CashFlows { get; }

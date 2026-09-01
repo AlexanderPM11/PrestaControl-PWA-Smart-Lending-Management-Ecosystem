@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Landmark, Plus, Search, Calendar, ChevronRight, AlertCircle, CheckCircle2, Trash2, XCircle, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/api';
 import { useToast } from '../context/ToastContext';
 import ConfirmDialog, { type ConfirmDialogType } from '../components/ui/ConfirmDialog';
 
 const LoansPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const clientIdFilter = Number(searchParams.get('clientId')) || null;
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -103,11 +105,12 @@ const LoansPage: React.FC = () => {
   ];
 
   const filteredLoans = loans.filter(l => {
+    const matchesClient = !clientIdFilter || l.clientId === clientIdFilter;
     const matchesSearch = l.clientName.toLowerCase().includes(search.toLowerCase());
-    if (activeTab === 'activos') return matchesSearch && (l.status === 'Active' || l.status === 'Overdue');
-    if (activeTab === 'pagados') return matchesSearch && l.status === 'Paid';
-    if (activeTab === 'anulados') return matchesSearch && l.status === 'Cancelled';
-    return matchesSearch;
+    if (activeTab === 'activos') return matchesClient && matchesSearch && (l.status === 'Active' || l.status === 'Overdue');
+    if (activeTab === 'pagados') return matchesClient && matchesSearch && l.status === 'Paid';
+    if (activeTab === 'anulados') return matchesClient && matchesSearch && l.status === 'Cancelled';
+    return matchesClient && matchesSearch;
   });
 
   return (

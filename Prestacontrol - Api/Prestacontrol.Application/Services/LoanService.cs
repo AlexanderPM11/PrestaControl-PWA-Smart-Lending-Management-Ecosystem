@@ -22,6 +22,15 @@ namespace Prestacontrol.Application.Services
         {
             var localStartDate = request.StartDate.Kind == DateTimeKind.Utc ? request.StartDate.AddHours(-4) : request.StartDate;
 
+            var clientName = request.ClientName.Trim();
+            if (request.ClientId.HasValue)
+            {
+                var client = await _unitOfWork.Clients.GetByIdAsync(request.ClientId.Value);
+                if (client == null || !client.IsActive) throw new Exception("Cliente no encontrado o inactivo.");
+                clientName = client.FullName;
+            }
+            if (string.IsNullOrWhiteSpace(clientName)) throw new Exception("Debe seleccionar o ingresar un cliente.");
+
             decimal totalInterest = request.Amount * (request.InterestRate / 100);
             decimal totalToPay = request.Amount;
             decimal principalPerInstallment = request.Amount / request.InstallmentsCount;
@@ -30,7 +39,8 @@ namespace Prestacontrol.Application.Services
 
             var loan = new Loan
             {
-                ClientName = request.ClientName,
+                ClientId = request.ClientId,
+                ClientName = clientName,
                 UserId = userId,
                 Amount = request.Amount,
                 InterestRate = request.InterestRate,
@@ -66,7 +76,7 @@ namespace Prestacontrol.Application.Services
                 Amount = request.Amount,
                 Type = CashFlowType.Outcome,
                 Category = "Préstamo",
-                Description = $"Desembolso préstamo a cliente: {request.ClientName}",
+                Description = $"Desembolso préstamo a cliente: {clientName}",
                 UserId = userId,
                 Date = Prestacontrol.Application.Common.DRTimeProvider.Now
             });

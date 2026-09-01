@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, DollarSign, Percent } from 'lucide-react';
+import { ArrowLeft, User, DollarSign, Percent, Search, UserPlus, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../api/api';
 import { useToast } from '../context/ToastContext';
@@ -8,10 +8,27 @@ import { useToast } from '../context/ToastContext';
 const NewLoanPage: React.FC = () => {
   const navigate = useNavigate();
   const [clientName, setClientName] = useState('');
+  const [clientId, setClientId] = useState<number | null>(null);
+  const [clients, setClients] = useState<any[]>([]);
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientList, setShowClientList] = useState(false);
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [newClientPhone, setNewClientPhone] = useState('');
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const formatDominicanPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
   const [amount, setAmount] = useState<number | ''>('');
   const [interestRate, setInterestRate] = useState<number | ''>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+
+  React.useEffect(() => {
+    api.get('/clients').then((response) => setClients(response.data)).catch(() => toast.error('No se pudo cargar la lista de clientes'));
+  }, []);
 
   const formatWithSeparators = (val: number | '') => {
     if (val === '') return '';
@@ -57,6 +74,7 @@ const NewLoanPage: React.FC = () => {
 
     try {
       const payload = {
+        clientId,
         clientName: clientName.trim(),
         amount: Number(amount),
         interestRate: Number(interestRate),
@@ -73,6 +91,29 @@ const NewLoanPage: React.FC = () => {
       toast.error(err.response?.data?.message || 'Error al guardar el préstamo.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickCreateClient = async () => {
+    if (!clientName.trim()) {
+      toast.error('Escribe el nombre del cliente.');
+      return;
+    }
+    setIsCreatingClient(true);
+    try {
+      const response = await api.post('/clients', { fullName: clientName.trim(), phone: newClientPhone.trim() || null });
+      const createdClient = response.data;
+      setClients((current) => [createdClient, ...current]);
+      setClientId(createdClient.id);
+      setClientName(createdClient.fullName);
+      setNewClientPhone('');
+      setShowQuickCreate(false);
+      setShowClientList(false);
+      toast.success('Cliente registrado y seleccionado.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'No se pudo registrar el cliente.');
+    } finally {
+      setIsCreatingClient(false);
     }
   };
 
@@ -106,9 +147,19 @@ const NewLoanPage: React.FC = () => {
                 type="text"
                 placeholder="Ej. Juan Pérez"
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                onChange={(e) => { setClientName(e.target.value); setClientId(null); setClientSearch(e.target.value); setShowClientList(true); }}
+                onFocus={() => setShowClientList(true)}
                 className="input-field pl-12"
               />
+              {showClientList && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-sage-100 bg-white p-2 shadow-xl">
+                  <div className="flex items-center gap-2 border-b border-sage-100 px-2 pb-2 text-sage-400"><Search size={16} /><span className="text-xs font-medium">Clientes registrados</span></div>
+                  {clients.filter((client) => client.fullName.toLowerCase().includes(clientSearch.toLowerCase())).map((client) => (
+                    <button key={client.id} type="button" onClick={() => { setClientId(client.id); setClientName(client.fullName); setShowClientList(false); }} className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left hover:bg-sage-50"><span className="text-sm font-bold text-sage-900">{client.fullName}</span><span className="text-[10px] font-bold text-sage-400">{client.activeLoans} activos</span></button>
+                  ))}
+                  <button type="button" onClick={() => { setShowClientList(false); setShowQuickCreate(true); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-xs font-black text-tangerine-600 hover:bg-tangerine-50"><UserPlus size={16} /> Registrar cliente nuevo</button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -165,6 +216,20 @@ const NewLoanPage: React.FC = () => {
         </motion.button>
 
       </motion.div>
+
+      {showQuickCreate && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-sage-950/40 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-md space-y-5 rounded-[32px] bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between">
+              <div><p className="text-xs font-black uppercase tracking-widest text-tangerine-500">Alta rápida</p><h2 className="mt-1 font-display text-xl font-black text-sage-900">Nuevo cliente</h2><p className="mt-1 text-sm text-sage-500">Quedará seleccionado para este préstamo.</p></div>
+              <button type="button" onClick={() => setShowQuickCreate(false)} className="rounded-full p-2 text-sage-400 hover:bg-sage-50"><X size={19} /></button>
+            </div>
+            <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nombre completo" className="input-field" autoFocus />
+            <div><input value={newClientPhone} onChange={(e) => setNewClientPhone(formatDominicanPhone(e.target.value))} placeholder="809-555-5555" inputMode="numeric" maxLength={12} className="input-field" /><p className="mt-1.5 px-1 text-[11px] font-medium text-sage-400">Formato: 809, 829 u 849 + 7 dígitos</p></div>
+            <div className="flex gap-3"><button type="button" onClick={() => setShowQuickCreate(false)} className="flex-1 rounded-2xl bg-sage-100 py-3.5 font-bold text-sage-700">Cancelar</button><button type="button" onClick={handleQuickCreateClient} disabled={isCreatingClient} className="flex-1 rounded-2xl bg-tangerine-500 py-3.5 font-black text-white disabled:opacity-60">{isCreatingClient ? 'Guardando...' : 'Guardar cliente'}</button></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

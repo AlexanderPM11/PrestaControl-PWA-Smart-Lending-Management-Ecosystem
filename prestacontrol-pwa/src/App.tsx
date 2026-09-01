@@ -12,6 +12,7 @@ import PaymentsPage from './pages/PaymentsPage';
 import DelinquentLoansPage from './pages/DelinquentLoansPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProfilePage from './pages/ProfilePage';
+import ClientsPage from './pages/ClientsPage';
 
 import MainLayout from './components/layout/MainLayout';
 import UpdatePrompt from './components/ui/UpdatePrompt';
@@ -102,6 +103,7 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>

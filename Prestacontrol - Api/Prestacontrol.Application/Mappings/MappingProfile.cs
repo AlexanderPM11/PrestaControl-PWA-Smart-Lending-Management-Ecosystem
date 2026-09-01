@@ -9,6 +9,7 @@ namespace Prestacontrol.Application.Mappings
         public MappingProfile()
         {
             CreateMap<User, UserDto>();
+            CreateMap<Client, ClientDto>();
             CreateMap<Loan, LoanDto>();
             CreateMap<Installment, InstallmentDto>();
             CreateMap<Payment, PaymentDto>();

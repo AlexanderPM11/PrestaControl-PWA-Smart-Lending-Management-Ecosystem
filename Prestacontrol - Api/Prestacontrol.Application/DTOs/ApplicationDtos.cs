@@ -21,6 +21,7 @@ namespace Prestacontrol.Application.DTOs
     public class LoanDto
     {
         public int Id { get; set; }
+        public int? ClientId { get; set; }
 
         public string ClientName { get; set; } = string.Empty;
         public decimal Amount { get; set; }
@@ -49,6 +50,7 @@ namespace Prestacontrol.Application.DTOs
 
     public class CreateLoanRequest
     {
+        public int? ClientId { get; set; }
         public string ClientName { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public decimal InterestRate { get; set; }
@@ -57,6 +59,31 @@ namespace Prestacontrol.Application.DTOs
         public int InstallmentsCount { get; set; }
         public DateTime StartDate { get; set; }
     }
+
+    public class ClientDto
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? DocumentId { get; set; }
+        public string? Address { get; set; }
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; }
+        public int TotalLoans { get; set; }
+        public int ActiveLoans { get; set; }
+        public decimal BalanceDue { get; set; }
+    }
+
+    public class CreateClientRequest
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? DocumentId { get; set; }
+        public string? Address { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class UpdateClientRequest : CreateClientRequest { }
 
     public class PaymentRequest
     {

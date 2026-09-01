@@ -24,6 +24,14 @@ namespace Prestacontrol.Application.Interfaces
         Task<bool> DeleteLoanAsync(int loanId);
     }
 
+    public interface IClientService
+    {
+        Task<IEnumerable<ClientDto>> GetClientsAsync(string? search);
+        Task<ClientDto?> GetClientAsync(int id);
+        Task<ClientDto> CreateClientAsync(CreateClientRequest request);
+        Task<ClientDto?> UpdateClientAsync(int id, UpdateClientRequest request);
+    }
+
     public interface IJwtService
     {
         string GenerateToken(Domain.Entities.User user);

@@ -37,6 +37,7 @@ namespace Prestacontrol.Infrastructure.Repositories
                 .FirstOrDefaultAsync(l => l.Id == id);
         }
     }
+    public class ClientRepository : GenericRepository<Client>, IClientRepository { public ClientRepository(Persistence.ApplicationDbContext context) : base(context) { } }
     public class InstallmentRepository : GenericRepository<Installment>, IInstallmentRepository { public InstallmentRepository(Persistence.ApplicationDbContext context) : base(context) { } }
     public class PaymentRepository : GenericRepository<Payment>, IPaymentRepository { public PaymentRepository(Persistence.ApplicationDbContext context) : base(context) { } }
     public class CashFlowRepository : GenericRepository<CashFlow>, ICashFlowRepository { public CashFlowRepository(Persistence.ApplicationDbContext context) : base(context) { } }
@@ -52,6 +53,7 @@ namespace Prestacontrol.Infrastructure.Repositories
             Users = new UserRepository(_context);
 
             Loans = new LoanRepository(_context);
+            Clients = new ClientRepository(_context);
             Installments = new InstallmentRepository(_context);
             Payments = new PaymentRepository(_context);
             CashFlows = new CashFlowRepository(_context);
@@ -62,6 +64,7 @@ namespace Prestacontrol.Infrastructure.Repositories
         public IUserRepository Users { get; private set; }
 
         public ILoanRepository Loans { get; private set; }
+        public IClientRepository Clients { get; private set; }
         public IInstallmentRepository Installments { get; private set; }
         public IPaymentRepository Payments { get; private set; }
         public ICashFlowRepository CashFlows { get; private set; }

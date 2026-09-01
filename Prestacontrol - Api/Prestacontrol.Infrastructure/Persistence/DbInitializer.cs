@@ -8,6 +8,8 @@ namespace Prestacontrol.Infrastructure.Persistence
     {
         public static async Task Initialize(ApplicationDbContext context)
         {
+            await EnsureClientsSchema(context);
+
             // Apply pending migrations
             if ((await context.Database.GetPendingMigrationsAsync()).Any())
             {
@@ -29,6 +31,52 @@ namespace Prestacontrol.Infrastructure.Persistence
                 await context.Users.AddAsync(admin);
                 await context.SaveChangesAsync();
             }
+        }
+
+        private static async Task EnsureClientsSchema(ApplicationDbContext context)
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS `Clients` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `CreatedAt` datetime(6) NOT NULL,
+                    `UpdatedAt` datetime(6) NULL,
+                    `FullName` varchar(200) NOT NULL,
+                    `Phone` varchar(50) NULL,
+                    `DocumentId` varchar(50) NULL,
+                    `Address` varchar(300) NULL,
+                    `Notes` varchar(1000) NULL,
+                    `IsActive` tinyint(1) NOT NULL DEFAULT 1,
+                    PRIMARY KEY (`Id`)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;");
+
+            var clientIdColumnExists = await context.Database.SqlQueryRaw<int>(@"
+                SELECT COUNT(*) AS `Value`
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'Loans'
+                  AND COLUMN_NAME = 'ClientId'").SingleAsync() > 0;
+
+            if (!clientIdColumnExists)
+            {
+                await context.Database.ExecuteSqlRawAsync(@"
+                    ALTER TABLE `Loans` ADD COLUMN `ClientId` int NULL;");
+            }
+
+            // Link legacy loans to one client record without changing their
+            // stored ClientName or financial history.
+            await context.Database.ExecuteSqlRawAsync(@"
+                INSERT INTO `Clients` (`CreatedAt`, `FullName`, `IsActive`)
+                SELECT UTC_TIMESTAMP(6), l.`ClientName`, 1
+                FROM `Loans` l
+                LEFT JOIN `Clients` c ON CONVERT(LOWER(c.`FullName`) USING utf8mb4) COLLATE utf8mb4_general_ci = CONVERT(LOWER(l.`ClientName`) USING utf8mb4) COLLATE utf8mb4_general_ci
+                WHERE c.`Id` IS NULL AND l.`ClientName` <> ''
+                GROUP BY l.`ClientName`;");
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                UPDATE `Loans` l
+                INNER JOIN `Clients` c ON CONVERT(LOWER(c.`FullName`) USING utf8mb4) COLLATE utf8mb4_general_ci = CONVERT(LOWER(l.`ClientName`) USING utf8mb4) COLLATE utf8mb4_general_ci
+                SET l.`ClientId` = c.`Id`
+                WHERE l.`ClientId` IS NULL;");
         }
     }
 }

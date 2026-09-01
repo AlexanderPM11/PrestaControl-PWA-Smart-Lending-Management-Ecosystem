@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wallet, UserCircle2, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Wallet, UserCircle2, ArrowLeft, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import ConfirmDialog from '../ui/ConfirmDialog';
 
@@ -19,6 +19,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navItems = [
     { label: 'Inicio', icon: LayoutDashboard, path: '/dashboard' },
     { label: 'Préstamos', icon: Wallet, path: '/loans' },
+    { label: 'Clientes', icon: Users, path: '/clients' },
     { label: 'Perfil', icon: UserCircle2, path: '/profile' }, // Replace logout with profile placeholder or keep logout
   ];
 
