@@ -116,6 +116,7 @@ public sealed class GoogleDriveBackupWorker : BackgroundService
     private async Task UploadToDrive(string archive, CancellationToken cancellationToken)
     {
         var token = await GetAccessToken(cancellationToken);
+        await LogDriveAccount(token, cancellationToken);
         var folder = GetRequired("BACKUP_GOOGLE_DRIVE_FOLDER_ID");
         await ValidateDriveFolder(folder, token, cancellationToken);
         var metadata = JsonSerializer.Serialize(new { name = $"prestacontrol-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.pca", parents = new[] { folder }, description = "Encrypted PrestaControl full backup" });
@@ -140,6 +141,17 @@ public sealed class GoogleDriveBackupWorker : BackgroundService
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
         if (!json.RootElement.TryGetProperty("mimeType", out var type) || type.GetString() != "application/vnd.google-apps.folder")
             throw new InvalidOperationException("BACKUP_GOOGLE_DRIVE_FOLDER_ID no corresponde a una carpeta de Google Drive.");
+    }
+
+    private async Task LogDriveAccount(string token, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/drive/v3/about?fields=user(emailAddress,displayName)");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await _httpClientFactory.CreateClient().SendAsync(request, cancellationToken);
+        await EnsureSuccess(response, "checking Google Drive account");
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var user = json.RootElement.GetProperty("user");
+        _logger.LogInformation("Google Drive backup account: {Email} ({DisplayName})", user.GetProperty("emailAddress").GetString(), user.GetProperty("displayName").GetString());
     }
 
     private static async Task EnsureSuccess(HttpResponseMessage response, string operation)
