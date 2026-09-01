@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prestacontrol.Application.DTOs;
 using Prestacontrol.Application.Interfaces;
+using System.Security.Claims;
 
 namespace Prestacontrol.API.Controllers
 {
@@ -47,6 +49,39 @@ namespace Prestacontrol.API.Controllers
             var result = await _authService.ForgotPasswordAsync(request.Username);
             if (!result) return NotFound(new { message = "Usuario no encontrado" });
             return Ok(new { message = "Enlace de recuperación enviado a Telegram" });
+        }
+
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var result = await _authService.UpdateProfileAsync(userId, request);
+            if (!result) return BadRequest(new { message = "No se pudo actualizar el perfil" });
+            return Ok(new { success = true, message = "Perfil actualizado correctamente" });
+        }
+
+        [Authorize]
+        [HttpPut("password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            try
+            {
+                var result = await _authService.ChangePasswordAsync(userId, request);
+                if (!result) return BadRequest(new { message = "No se pudo cambiar la contraseña" });
+                return Ok(new { success = true, message = "Contraseña actualizada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 

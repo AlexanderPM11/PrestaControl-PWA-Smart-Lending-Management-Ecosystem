@@ -7,6 +7,8 @@ namespace Prestacontrol.Application.Interfaces
         Task<LoginResponse?> LoginAsync(LoginRequest request);
         Task<UserDto> RegisterAsync(UserDto userDto, string password);
         Task<bool> ForgotPasswordAsync(string username);
+        Task<bool> UpdateProfileAsync(int userId, UpdateProfileRequest request);
+        Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request);
     }
 
     public interface ILoanService

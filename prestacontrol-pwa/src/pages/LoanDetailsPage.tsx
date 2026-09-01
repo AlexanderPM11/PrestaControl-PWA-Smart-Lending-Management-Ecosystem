@@ -149,26 +149,6 @@ const LoanDetailsPage: React.FC = () => {
             />
           </div>
         </div>
-
-        <div className="bg-tangerine-500 p-6 rounded-3xl shadow-lg shadow-tangerine-500/20 relative overflow-hidden text-white border border-tangerine-600/30">
-          <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-tangerine-100 font-sans mb-1">Saldo Pendiente</p>
-          <p className="text-3xl font-black font-display">${loan.balanceDue.toLocaleString()}</p>
-          <div className="w-full bg-tangerine-600 h-1.5 rounded-full mt-3 overflow-hidden">
-            <div 
-              className="bg-white h-full transition-all duration-1000" 
-              style={{ width: `${Math.max(0.5, progress)}%` }}
-            />
-          </div>
-          <div className="mt-4 flex items-center justify-between font-sans">
-            <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-white text-tangerine-600`}>
-              {loan.status === 'Cancelled' ? 'Anulado' : loan.status === 'Paid' ? 'Completado' : loan.status === 'Overdue' ? 'En Mora' : 'Activo'}
-            </span>
-            <p className="text-[10px] font-black text-white tracking-widest uppercase">
-              {progress > 0 && progress < 1 ? progress.toFixed(2) : Math.round(progress)}% PAGADO
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Tabs */}

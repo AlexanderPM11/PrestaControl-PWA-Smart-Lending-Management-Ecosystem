@@ -11,6 +11,7 @@ import EditLoanPage from './pages/EditLoanPage';
 import PaymentsPage from './pages/PaymentsPage';
 import DelinquentLoansPage from './pages/DelinquentLoansPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ProfilePage from './pages/ProfilePage';
 
 import MainLayout from './components/layout/MainLayout';
 
@@ -91,7 +92,17 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-      <Route path="/" element={<Navigate to="/dashboard" />} />
+
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
   );
 }

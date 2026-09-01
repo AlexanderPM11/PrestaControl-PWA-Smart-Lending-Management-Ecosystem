@@ -63,13 +63,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             return (
               <Link 
                 key={idx} 
-                to={item.path === '/profile' ? '#' : item.path} 
-                onClick={(e) => {
-                  if(item.path === '/profile') {
-                    e.preventDefault();
-                    logout();
-                  }
-                }}
+                to={item.path} 
                 className={`flex flex-col items-center gap-1.5 transition-all w-16 ${
                   isActive 
                     ? 'text-tangerine-500 transform scale-110' 

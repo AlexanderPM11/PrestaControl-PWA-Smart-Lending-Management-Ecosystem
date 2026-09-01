@@ -89,13 +89,50 @@ namespace Prestacontrol.Application.Services
             var user = await _unitOfWork.Users.GetByUsernameAsync(username);
             if (user == null) return false;
 
+            // Generate a random 6-digit PIN
+            var random = new Random();
+            var newPassword = random.Next(100000, 999999).ToString();
+            
+            user.PasswordHash = newPassword; // Simple for demo, should be hashed
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.CompleteAsync();
+
             var message = $"<b>🔑 Recuperación de Contraseña</b>\n\n" +
                           $"Hola <b>{user.FullName}</b>,\n" +
                           $"Has solicitado recuperar tu contraseña en <b>Prestacontrol</b>.\n\n" +
-                          $"Tu contraseña es: <code>{user.PasswordHash}</code>\n\n" +
-                          $"<i>Por seguridad, te recomendamos cambiarla desde el panel de configuración.</i>";
+                          $"Tu nueva contraseña temporal es: <code>{newPassword}</code>\n\n" +
+                          $"<i>Por seguridad, te recomendamos iniciar sesión e ir a la sección de 'Perfil' para cambiarla inmediatamente.</i>";
 
             await _telegramService.SendMessageAsync(message);
+            return true;
+        }
+
+        public async Task<bool> UpdateProfileAsync(int userId, UpdateProfileRequest request)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            if (user == null) return false;
+
+            if (!string.IsNullOrWhiteSpace(request.FullName))
+            {
+                user.FullName = request.FullName.Trim();
+                _unitOfWork.Users.Update(user);
+                await _unitOfWork.CompleteAsync();
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            if (user == null) return false;
+
+            if (user.PasswordHash != request.CurrentPassword)
+                throw new Exception("La contraseña actual es incorrecta.");
+
+            user.PasswordHash = request.NewPassword;
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.CompleteAsync();
             return true;
         }
     }
