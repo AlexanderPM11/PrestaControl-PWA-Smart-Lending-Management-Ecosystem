@@ -140,6 +140,17 @@ namespace Prestacontrol.Infrastructure.Persistence
                     PRIMARY KEY (`Id`)
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;");
 
+            // A partially restored database may contain Clients but not Loans.
+            // In that state there is nothing to link yet; leave the existing
+            // client data intact and let the normal migrations/restore finish.
+            var loansTableExists = await context.Database.SqlQueryRaw<int>(@"
+                SELECT COUNT(*) AS `Value`
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'Loans'").SingleAsync() > 0;
+
+            if (!loansTableExists) return;
+
             var clientIdColumnExists = await context.Database.SqlQueryRaw<int>(@"
                 SELECT COUNT(*) AS `Value`
                 FROM INFORMATION_SCHEMA.COLUMNS
