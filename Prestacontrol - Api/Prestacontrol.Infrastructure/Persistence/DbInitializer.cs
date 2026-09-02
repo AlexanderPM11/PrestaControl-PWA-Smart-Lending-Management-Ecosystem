@@ -18,6 +18,11 @@ namespace Prestacontrol.Infrastructure.Persistence
                 await context.Database.MigrateAsync();
             }
 
+            // A restored database may report migrations as applied while a
+            // configuration table is missing. Repair that drift before the
+            // background workers start querying it.
+            await EnsureSystemConfigSchema(context);
+
             // Seed initial data
             if (!await context.Users.AnyAsync())
             {
@@ -53,6 +58,25 @@ namespace Prestacontrol.Infrastructure.Persistence
                     PRIMARY KEY (`Id`),
                     INDEX `IX_AuditLogs_OccurredAt` (`OccurredAt`),
                     INDEX `IX_AuditLogs_Module` (`Module`)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;");
+        }
+
+        private static async Task EnsureSystemConfigSchema(ApplicationDbContext context)
+        {
+            var tableExists = await context.Database.SqlQueryRaw<int>(@"
+                SELECT COUNT(*) AS `Value`
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'SystemConfigs'").SingleAsync() > 0;
+
+            if (tableExists) return;
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS `SystemConfigs` (
+                    `Key` varchar(255) NOT NULL,
+                    `Value` longtext NOT NULL,
+                    `UpdatedAt` datetime(6) NOT NULL,
+                    PRIMARY KEY (`Key`)
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;");
         }
 

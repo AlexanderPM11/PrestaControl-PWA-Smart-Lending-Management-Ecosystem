@@ -27,14 +27,28 @@ public sealed class GoogleDriveBackupWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (await IsBackupEnabled() && GetBool("BACKUP_RUN_ON_STARTUP", false))
-            await RunBackupSafely(stoppingToken);
+        try
+        {
+            if (await IsBackupEnabled() && GetBool("BACKUP_RUN_ON_STARTUP", false))
+                await RunBackupSafely(stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
+        catch (Exception ex) { _logger.LogError(ex, "Backup worker initialization failed; the API will continue running."); }
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(GetDelayUntilNextRun(), stoppingToken);
-            if (!stoppingToken.IsCancellationRequested && await IsBackupEnabled())
-                await RunBackupSafely(stoppingToken);
+            try
+            {
+                await Task.Delay(GetDelayUntilNextRun(), stoppingToken);
+                if (!stoppingToken.IsCancellationRequested && await IsBackupEnabled())
+                    await RunBackupSafely(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Backup worker check failed; the API will continue running.");
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            }
         }
     }
 
