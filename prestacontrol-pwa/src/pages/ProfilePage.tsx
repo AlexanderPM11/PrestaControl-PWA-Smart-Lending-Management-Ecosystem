@@ -27,12 +27,13 @@ const ProfilePage: React.FC = () => {
   const [isUpdatingBackup, setIsUpdatingBackup] = useState(false);
 
   React.useEffect(() => {
+    if (user?.role !== 'Admin') return;
     api.get('/backups/settings').then(({ data }) => { setBackupEnabled(data.enabled); setBackupConfigured(data.connected); setGoogleConfigured(data.googleConfigured); }).catch(() => undefined);
     const status = new URLSearchParams(window.location.search).get('backup');
     if (status === 'connected') toast.success('Google Drive conectado correctamente.');
     if (status && status !== 'connected') toast.error('No se pudo conectar Google Drive. Inténtalo nuevamente.');
     if (status) window.history.replaceState({}, '', window.location.pathname);
-  }, []);
+  }, [user?.role]);
 
   const connectGoogleDrive = async () => {
     try {
@@ -160,7 +161,7 @@ const ProfilePage: React.FC = () => {
         </form>
       </div>}
 
-      <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
+      {user?.role === 'Admin' && <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
         <div className="flex items-start justify-between gap-4">
           <div><h3 className="text-lg font-black text-sage-900 font-display flex items-center gap-2"><CloudBackup size={20} className="text-tangerine-500" /> Backups automáticos</h3><p className="mt-1 text-sm font-medium text-sage-500">Copia cifrada de la aplicación en Google Drive.</p></div>
           {backupConfigured && <button type="button" onClick={toggleBackups} disabled={isUpdatingBackup} aria-label="Activar o desactivar backups" className={`relative h-7 w-12 shrink-0 rounded-full p-1 transition-colors ${backupEnabled ? 'bg-tangerine-500' : 'bg-sage-200'} disabled:cursor-not-allowed disabled:opacity-50`}><span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${backupEnabled ? 'translate-x-5' : 'translate-x-0'}`} /></button>}
@@ -178,7 +179,7 @@ const ProfilePage: React.FC = () => {
           <input ref={backupFileRef} type="file" accept=".pca" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setSelectedBackupFile(file); setRestoreDialogOpen(true); } }} />
           <button type="button" onClick={() => backupFileRef.current?.click()} disabled={isRestoringBackup} className="mt-3 w-full rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 font-black text-sage-700 transition hover:bg-sage-100 disabled:opacity-50"><Upload size={17} className="mr-2 inline" />{isRestoringBackup ? 'Restaurando…' : 'Cargar y restaurar backup'}</button>
         </div>
-      </div>
+      </div>}
 
       <div className="bg-white p-6 rounded-[32px] shadow-sm border border-sage-100">
         <h3 className="text-lg font-black text-sage-900 font-display mb-4 flex items-center gap-2">

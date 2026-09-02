@@ -25,9 +25,25 @@
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html, body, #root {
+    min-height: 100%;
+  }
+
   body {
     @apply bg-sage-50 text-sage-900 font-sans antialiased;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent mobile browsers, especially iOS Safari, from zooming the layout
+     when an input receives focus. Keep controls at the accessible 16px floor. */
+  input, textarea, select {
+    font-size: 16px;
+    line-height: 1.35;
   }
 }
 
