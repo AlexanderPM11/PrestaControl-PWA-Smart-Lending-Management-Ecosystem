@@ -9,19 +9,21 @@ namespace Prestacontrol.Infrastructure.Persistence
     {
         public static async Task Initialize(ApplicationDbContext context)
         {
-            await EnsureAuditSchema(context);
-            await EnsureClientsSchema(context);
-
             // Apply pending migrations
             if ((await context.Database.GetPendingMigrationsAsync()).Any())
             {
                 await context.Database.MigrateAsync();
             }
 
+            // Custom compatibility tables and repairs must run after the
+            // EF migrations. Running them first breaks a fresh database
+            // because base tables such as Loans do not exist yet.
+            await EnsureAuditSchema(context);
             // A restored database may report migrations as applied while a
             // configuration table is missing. Repair that drift before the
             // background workers start querying it.
             await EnsureSystemConfigSchema(context);
+            await EnsureClientsSchema(context);
 
             // Seed initial data
             if (!await context.Users.AnyAsync())
