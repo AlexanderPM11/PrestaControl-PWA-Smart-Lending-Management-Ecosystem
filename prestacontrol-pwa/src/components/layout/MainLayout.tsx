@@ -24,6 +24,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     ...(user?.role === 'Admin' ? [{ label: 'Auditoría', icon: ClipboardList, path: '/audit' }] : []),
     { label: 'Perfil', icon: UserCircle2, path: '/profile' }, // Replace logout with profile placeholder or keep logout
   ];
+  const navColumnsClass = navItems.length === 4 ? 'grid-cols-4' : 'grid-cols-6';
 
   return (
     <div className="h-dvh overflow-hidden bg-sage-100 flex items-center justify-center font-sans">
@@ -63,7 +64,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         {/* Bottom Navigation */}
         <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 w-full bg-white/95 px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_32px_rgba(41,51,47,0.16)] backdrop-blur-2xl">
-          <div className="mx-auto grid w-full max-w-md grid-cols-6 items-stretch gap-1">
+          <div className={`mx-auto grid w-full max-w-md ${navColumnsClass} items-stretch gap-1`}>
           {navItems.map((item, idx) => {
             const isActive = location.pathname === item.path || (item.path === '/loans' && location.pathname.startsWith('/loans'));
             return (
