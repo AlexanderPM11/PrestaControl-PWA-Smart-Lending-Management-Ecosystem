@@ -62,22 +62,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </main>
 
         {/* Bottom Navigation */}
-        <nav className="fixed inset-x-0 bottom-0 z-40 w-full bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_32px_rgba(41,51,47,0.16)] backdrop-blur-2xl">
-          <div className="mx-auto flex w-full max-w-md items-center justify-around gap-2">
+        <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 z-40 w-full bg-white/95 px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_32px_rgba(41,51,47,0.16)] backdrop-blur-2xl">
+          <div className="mx-auto grid w-full max-w-md grid-cols-6 items-stretch gap-1">
           {navItems.map((item, idx) => {
             const isActive = location.pathname === item.path || (item.path === '/loans' && location.pathname.startsWith('/loans'));
             return (
               <Link 
                 key={idx} 
                 to={item.path} 
-                className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 transition-all active:scale-95 ${
+                className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0.5 transition-all active:scale-95 ${
                   isActive 
                     ? 'bg-tangerine-50 text-tangerine-500 shadow-sm shadow-tangerine-500/10' 
                     : 'text-sage-400 hover:bg-sage-50 hover:text-sage-900'
                 }`}
               >
-                <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[10px] font-bold font-display uppercase tracking-widest">
+                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                <span className="w-full truncate text-center text-[9px] font-bold font-display uppercase tracking-[0.08em]">
                   {item.label}
                 </span>
               </Link>
