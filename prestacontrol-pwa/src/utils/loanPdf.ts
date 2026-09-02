@@ -136,7 +136,8 @@ export function createLoanPdf({ loan, payments }: LoanPdfOptions): File {
         `Capital: ${money(payment.capitalAmount)}`,
         `Interés: ${money(payment.interestAmount)}`,
         `Total: ${money(payment.amount)}`,
-        payment.paymentMethod || 'Efectivo'
+        payment.paymentMethod || 'Efectivo',
+        `Registró: ${payment.username || 'sistema'}`
       ].join('  •  ');
       const notes = payment.notes ? `Observación: ${payment.notes}` : '';
       const wrapped = pdf.splitTextToSize(`${text}${notes ? `\n${notes}` : ''}`, contentWidth - 8);

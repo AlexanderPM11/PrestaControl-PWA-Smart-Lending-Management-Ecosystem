@@ -5,6 +5,7 @@ using Prestacontrol.Domain.Entities;
 using Prestacontrol.Domain.Enums;
 using Prestacontrol.Domain.Interfaces;
 using System.Security.Claims;
+using Prestacontrol.API.Services;
 
 namespace Prestacontrol.API.Controllers;
 
@@ -14,8 +15,9 @@ namespace Prestacontrol.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditService _audit;
 
-    public UsersController(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+    public UsersController(IUnitOfWork unitOfWork, IAuditService audit) { _unitOfWork = unitOfWork; _audit = audit; }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetAll()
@@ -44,6 +46,7 @@ public class UsersController : ControllerBase
         };
         await _unitOfWork.Users.AddAsync(user);
         await _unitOfWork.CompleteAsync();
+        await _audit.RecordAsync(User, "Usuarios", "Creó usuario", "User", user.Id, $"Rol: {user.Role}");
         return Ok(ToDto(user));
     }
 
@@ -79,6 +82,7 @@ public class UsersController : ControllerBase
         user.UpdatedAt = DateTime.UtcNow;
         _unitOfWork.Users.Update(user);
         await _unitOfWork.CompleteAsync();
+        await _audit.RecordAsync(User, "Usuarios", "Editó usuario", "User", user.Id, $"Rol: {user.Role}; Activo: {user.IsActive}");
         return Ok(ToDto(user));
     }
 
@@ -96,6 +100,7 @@ public class UsersController : ControllerBase
         user.UpdatedAt = DateTime.UtcNow;
         _unitOfWork.Users.Update(user);
         await _unitOfWork.CompleteAsync();
+        await _audit.RecordAsync(User, "Usuarios", "Desactivó usuario", "User", user.Id);
         return NoContent();
     }
 

@@ -17,6 +17,7 @@ namespace Prestacontrol.Infrastructure.Persistence
         public DbSet<FinancialTransaction> FinancialTransactions { get; set; } = null!;
         public DbSet<SystemConfig> SystemConfigs { get; set; } = null!;
         public DbSet<LoanAuditLog> LoanAuditLogs { get; set; } = null!;
+        public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

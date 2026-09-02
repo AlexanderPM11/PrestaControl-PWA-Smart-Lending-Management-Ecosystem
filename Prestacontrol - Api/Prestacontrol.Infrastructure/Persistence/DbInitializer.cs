@@ -8,6 +8,7 @@ namespace Prestacontrol.Infrastructure.Persistence
     {
         public static async Task Initialize(ApplicationDbContext context)
         {
+            await EnsureAuditSchema(context);
             await EnsureClientsSchema(context);
 
             // Apply pending migrations
@@ -31,6 +32,27 @@ namespace Prestacontrol.Infrastructure.Persistence
                 await context.Users.AddAsync(admin);
                 await context.SaveChangesAsync();
             }
+        }
+
+        private static async Task EnsureAuditSchema(ApplicationDbContext context)
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS `AuditLogs` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `CreatedAt` datetime(6) NOT NULL,
+                    `UpdatedAt` datetime(6) NULL,
+                    `UserId` int NULL,
+                    `Username` varchar(100) NOT NULL,
+                    `Module` varchar(80) NOT NULL,
+                    `Action` varchar(120) NOT NULL,
+                    `EntityType` varchar(80) NULL,
+                    `EntityId` int NULL,
+                    `Details` text NULL,
+                    `OccurredAt` datetime(6) NOT NULL,
+                    PRIMARY KEY (`Id`),
+                    INDEX `IX_AuditLogs_OccurredAt` (`OccurredAt`),
+                    INDEX `IX_AuditLogs_Module` (`Module`)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;");
         }
 
         private static async Task EnsureClientsSchema(ApplicationDbContext context)

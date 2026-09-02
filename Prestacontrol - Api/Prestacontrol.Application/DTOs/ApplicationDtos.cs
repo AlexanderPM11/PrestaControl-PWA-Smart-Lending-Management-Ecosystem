@@ -123,6 +123,7 @@ namespace Prestacontrol.Application.DTOs
         public DateTime PaymentDate { get; set; }
         public string PaymentMethod { get; set; } = string.Empty;
         public string? Notes { get; set; }
+        public string Username { get; set; } = string.Empty;
         public int? InstallmentId { get; set; }
     }
 

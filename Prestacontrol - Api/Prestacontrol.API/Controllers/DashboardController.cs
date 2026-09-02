@@ -33,6 +33,12 @@ namespace Prestacontrol.API.Controllers
                 .Distinct()
                 .CountAsync();
 
+            var activeLoans = await _context.Loans
+                .CountAsync(l => l.Status == LoanStatus.Active);
+
+            var overdueLoans = await _context.Loans
+                .CountAsync(l => l.Status == LoanStatus.Overdue || l.Status == LoanStatus.Defaulted);
+
             var pendingInstallments = await _context.Installments
                 .Where(i => i.Status != InstallmentStatus.Paid && i.DueDate.Date == DateTime.Today)
                 .Select(i => new {
@@ -44,12 +50,34 @@ namespace Prestacontrol.API.Controllers
                 })
                 .ToListAsync();
 
+            var recentPayments = await _context.Payments
+                .AsNoTracking()
+                .Include(p => p.Loan)
+                .Include(p => p.User)
+                .OrderByDescending(p => p.PaymentDate)
+                .Take(3)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Amount,
+                    p.PaymentDate,
+                    p.PaymentMethod,
+                    ClientName = p.Loan.ClientName,
+                    RegisteredBy = p.User.FullName
+                })
+                .ToListAsync();
+
             return Ok(new
             {
                 TotalLoaned = totalLoaned,
                 TotalCollected = totalCollected,
                 ActiveClients = activeClients,
+                ActiveLoans = activeLoans,
+                OverdueLoans = overdueLoans,
                 TodayAgenda = pendingInstallments
+                    .OrderBy(i => i.Status == InstallmentStatus.Overdue ? 0 : 1)
+                    .ThenBy(i => i.ClientName),
+                RecentPayments = recentPayments
             });
         }
     }

@@ -132,4 +132,16 @@ namespace Prestacontrol.Domain.Entities
         public string ChangesDescription { get; set; } = string.Empty;
         public DateTime Date { get; set; } = DateTime.UtcNow;
     }
+
+    public class AuditLog : BaseEntity
+    {
+        public int? UserId { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Module { get; set; } = string.Empty;
+        public string Action { get; set; } = string.Empty;
+        public string? EntityType { get; set; }
+        public int? EntityId { get; set; }
+        public string? Details { get; set; }
+        public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+    }
 }

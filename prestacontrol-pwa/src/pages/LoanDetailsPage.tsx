@@ -80,6 +80,7 @@ const LoanDetailsPage: React.FC = () => {
     try {
       setIsGeneratingPdf(true);
       const file = createLoanPdf({ loan, payments });
+      await api.post('/audit/pdf', { loanId: loan.id }).catch((auditError) => console.warn('No se pudo registrar la generación del PDF:', auditError));
       const shareData = {
         files: [file],
         title: `Préstamo #${String(loan.id).padStart(4, '0')}`,
@@ -275,16 +276,20 @@ const LoanDetailsPage: React.FC = () => {
                       <p className="text-sage-600 font-medium">Interés: <span className="font-bold text-tangerine-600">${(payment.interestAmount || 0).toLocaleString()}</span></p>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 bg-white text-sage-600 rounded-lg">
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-sage-600">
                       <CreditCard size={10} /> {payment.paymentMethod}
                     </span>
-                    {payment.notes && (
-                      <p className="text-xs text-sage-500 italic max-w-[190px] truncate" title={payment.notes}>
+                    <span className="text-right text-[10px] font-bold text-sage-400">Registró: {payment.username || 'sistema'}</span>
+                  </div>
+                  {payment.notes && (
+                    <div className="mt-2 border-t border-sage-200/70 pt-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-sage-400">Nota u observación</p>
+                      <p className="mt-1 whitespace-pre-wrap break-words text-xs font-medium leading-relaxed text-sage-600" title={payment.notes}>
                         {payment.notes}
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )) : (
                 <div className="py-10 text-center">

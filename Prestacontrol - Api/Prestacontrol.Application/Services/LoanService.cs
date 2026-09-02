@@ -153,6 +153,8 @@ namespace Prestacontrol.Application.Services
             {
                 dto.InterestAmount = transactions.Where(t => t.PaymentId == dto.Id && t.Type == "Interés").Sum(t => t.Amount);
                 dto.CapitalAmount = dto.Amount - dto.InterestAmount;
+                var payment = payments.First(p => p.Id == dto.Id);
+                dto.Username = (await _unitOfWork.Users.GetByIdAsync(payment.UserId))?.Username ?? "sistema";
             }
             
             return dtos;

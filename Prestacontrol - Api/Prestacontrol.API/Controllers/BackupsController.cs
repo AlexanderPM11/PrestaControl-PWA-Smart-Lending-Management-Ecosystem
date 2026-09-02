@@ -7,6 +7,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Prestacontrol.Infrastructure.Persistence;
+using Prestacontrol.API.Services;
 
 namespace Prestacontrol.API.Controllers;
 
@@ -19,13 +20,15 @@ public sealed class BackupsController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IDataProtector _protector;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IAuditService _audit;
 
-    public BackupsController(ApplicationDbContext context, IConfiguration configuration, IDataProtectionProvider dataProtectionProvider, IHttpClientFactory httpClientFactory)
+    public BackupsController(ApplicationDbContext context, IConfiguration configuration, IDataProtectionProvider dataProtectionProvider, IHttpClientFactory httpClientFactory, IAuditService audit)
     {
         _context = context;
         _configuration = configuration;
         _protector = dataProtectionProvider.CreateProtector("PrestaControl.GoogleDrive.RefreshToken.v1");
         _httpClientFactory = httpClientFactory;
+        _audit = audit;
     }
 
     [HttpGet("settings")]
@@ -141,6 +144,7 @@ public sealed class BackupsController : ControllerBase
             await DecryptFile(encrypted, archive, Get("BACKUP_ENCRYPTION_PASSWORD") ?? string.Empty, cancellationToken);
             await ExtractDatabaseDump(archive, dump, cancellationToken);
             await ImportDatabase(dump, cancellationToken);
+            await _audit.RecordAsync(User, "Backups", "Restauró backup", "Backup", null, $"Archivo: {backup.FileName}");
             return Ok(new { message = "La base de datos fue restaurada correctamente desde el backup." });
         }
         catch (CryptographicException) { return BadRequest(new { message = "No se pudo descifrar el backup. Verifica la contraseña configurada." }); }
@@ -166,6 +170,7 @@ public sealed class BackupsController : ControllerBase
         setting.Value = request.Enabled ? "true" : "false";
         setting.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
+        await _audit.RecordAsync(User, "Backups", request.Enabled ? "Activó backups" : "Desactivó backups");
         return Ok(new { enabled = request.Enabled });
     }
 

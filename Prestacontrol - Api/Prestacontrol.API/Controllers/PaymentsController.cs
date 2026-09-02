@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Prestacontrol.Application.DTOs;
 using Prestacontrol.Application.Interfaces;
 using System.Security.Claims;
+using Prestacontrol.API.Services;
+using Prestacontrol.Infrastructure.Persistence;
 
 namespace Prestacontrol.API.Controllers
 {
@@ -12,10 +14,12 @@ namespace Prestacontrol.API.Controllers
     public class PaymentsController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
+        private readonly IAuditService _audit;
+        private readonly ApplicationDbContext _context;
 
-        public PaymentsController(IPaymentService paymentService)
+        public PaymentsController(IPaymentService paymentService, IAuditService audit, ApplicationDbContext context)
         {
-            _paymentService = paymentService;
+            _paymentService = paymentService; _audit = audit; _context = context;
         }
 
         [HttpPost]
@@ -25,6 +29,7 @@ namespace Prestacontrol.API.Controllers
             {
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 var result = await _paymentService.ProcessPaymentAsync(request, userId);
+                await _audit.RecordAsync(User, "Pagos", "Registró pago", "Loan", request.LoanId, $"Capital: {request.CapitalAmount}; Interés: {request.InterestAmount}; Método: {request.PaymentMethod}");
                 return Ok(result);
             }
             catch (Exception ex)
@@ -46,8 +51,10 @@ namespace Prestacontrol.API.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                var previous = await _context.Payments.FindAsync(id);
                 var result = await _paymentService.EditPaymentAsync(id, request, userId);
                 if (!result) return NotFound(new { message = "Pago no encontrado" });
+                await _audit.RecordAsync(User, "Pagos", "Editó pago", "Payment", id, $"Antes: Total={previous?.Amount}; Observación={previous?.Notes}. Después: Capital={request.CapitalAmount}; Interés={request.InterestAmount}; Total={request.CapitalAmount + request.InterestAmount}; Observación={request.Notes}");
                 return Ok(new { success = true });
             }
             catch (Exception ex)
