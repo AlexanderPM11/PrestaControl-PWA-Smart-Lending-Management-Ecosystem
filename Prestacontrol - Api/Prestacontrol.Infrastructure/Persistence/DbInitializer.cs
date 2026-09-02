@@ -10,9 +10,18 @@ namespace Prestacontrol.Infrastructure.Persistence
         public static async Task Initialize(ApplicationDbContext context)
         {
             // Apply pending migrations
-            if ((await context.Database.GetPendingMigrationsAsync()).Any())
+            try
             {
-                await context.Database.MigrateAsync();
+                if ((await context.Database.GetPendingMigrationsAsync()).Any())
+                {
+                    await context.Database.MigrateAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Continue with idempotent repairs for databases restored
+                // with an incomplete or stale EF migration history.
+                Console.Error.WriteLine($"Database migrations did not complete: {ex.Message}");
             }
 
             // Custom compatibility tables and repairs must run after the
@@ -23,6 +32,7 @@ namespace Prestacontrol.Infrastructure.Persistence
             // configuration table is missing. Repair that drift before the
             // background workers start querying it.
             await EnsureSystemConfigSchema(context);
+            await EnsureUsersSchema(context);
             await EnsureClientsSchema(context);
 
             // Seed initial data
@@ -79,6 +89,31 @@ namespace Prestacontrol.Infrastructure.Persistence
                     `Value` longtext NOT NULL,
                     `UpdatedAt` datetime(6) NOT NULL,
                     PRIMARY KEY (`Key`)
+                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;");
+        }
+
+        private static async Task EnsureUsersSchema(ApplicationDbContext context)
+        {
+            var tableExists = await context.Database.SqlQueryRaw<int>(@"
+                SELECT COUNT(*) AS `Value`
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'Users'").SingleAsync() > 0;
+
+            if (tableExists) return;
+
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS `Users` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `FullName` longtext NOT NULL,
+                    `Username` varchar(255) NOT NULL,
+                    `PasswordHash` longtext NOT NULL,
+                    `Role` int NOT NULL,
+                    `IsActive` tinyint(1) NOT NULL,
+                    `CreatedAt` datetime(6) NOT NULL,
+                    `UpdatedAt` datetime(6) NULL,
+                    PRIMARY KEY (`Id`),
+                    UNIQUE INDEX `IX_Users_Username` (`Username`)
                 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;");
         }
 
