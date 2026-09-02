@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Prestacontrol.Application.DTOs;
 using Prestacontrol.Application.Interfaces;
 using System.Security.Claims;
+using Prestacontrol.API.Services;
 
 namespace Prestacontrol.API.Controllers
 {
@@ -11,7 +12,12 @@ namespace Prestacontrol.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-        public AuthController(IAuthService authService) => _authService = authService;
+        private readonly LoginRateLimiter _rateLimiter;
+        public AuthController(IAuthService authService, LoginRateLimiter rateLimiter)
+        {
+            _authService = authService;
+            _rateLimiter = rateLimiter;
+        }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -22,7 +28,14 @@ namespace Prestacontrol.API.Controllers
                 return BadRequest(new { message = "Cuerpo de petición nulo" });
             }
             
-            Console.WriteLine($"DEBUG: Login attempt for user: {request.Username}");
+            var username = request.Username.Trim();
+            var clientKey = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var rateLimitKey = $"{clientKey}:{username.ToUpperInvariant()}";
+            if (_rateLimiter.IsBlocked(rateLimitKey, out var retryAfter))
+            {
+                Response.Headers.RetryAfter = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+                return StatusCode(StatusCodes.Status429TooManyRequests, new { message = "Demasiados intentos fallidos. Espera unos minutos e inténtalo nuevamente." });
+            }
 
             if (!ModelState.IsValid)
             {
@@ -32,7 +45,12 @@ namespace Prestacontrol.API.Controllers
             }
 
             var response = await _authService.LoginAsync(request);
-            if (response == null) return Unauthorized(new { message = "Credenciales inválidas" });
+            if (response == null)
+            {
+                _rateLimiter.RecordFailure(rateLimitKey);
+                return Unauthorized(new { message = "Credenciales inválidas" });
+            }
+            _rateLimiter.Reset(rateLimitKey);
             return Ok(response);
         }
 

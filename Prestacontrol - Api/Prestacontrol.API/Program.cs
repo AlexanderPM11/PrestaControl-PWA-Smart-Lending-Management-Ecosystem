@@ -48,6 +48,7 @@ builder.Services.AddHostedService<GoogleDriveBackupWorker>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDelinquencyService, DelinquencyService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddSingleton<LoginRateLimiter>();
 
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));

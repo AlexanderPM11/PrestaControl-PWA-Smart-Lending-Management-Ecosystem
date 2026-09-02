@@ -115,6 +115,10 @@ public sealed class GoogleDriveBackupWorker : BackgroundService
 
     private async Task UploadToDrive(string archive, CancellationToken cancellationToken)
     {
+        var maxSize = GetInt("BACKUP_MAX_ARCHIVE_MB", 512) * 1024L * 1024L;
+        var archiveInfo = new FileInfo(archive);
+        if (!archiveInfo.Exists || archiveInfo.Length == 0 || archiveInfo.Length > maxSize)
+            throw new InvalidOperationException("El archivo de backup generado supera el límite de seguridad configurado.");
         var token = await GetAccessToken(cancellationToken);
         await LogDriveAccount(token, cancellationToken);
         var folder = GetRequired("BACKUP_GOOGLE_DRIVE_FOLDER_ID");
@@ -122,7 +126,7 @@ public sealed class GoogleDriveBackupWorker : BackgroundService
         var metadata = JsonSerializer.Serialize(new { name = $"prestacontrol-backup-{DateTime.UtcNow:yyyyMMdd-HHmmss}.pca", parents = new[] { folder }, description = "Encrypted PrestaControl full backup" });
         using var content = new MultipartContent("related", "backup-boundary");
         var metadataPart = new StringContent(metadata, Encoding.UTF8, "application/json");
-        var filePart = new StreamContent(File.OpenRead(archive));
+        var filePart = new StreamContent(File.OpenRead(archive)) { Headers = { ContentLength = archiveInfo.Length } };
         filePart.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
         content.Add(metadataPart);
         content.Add(filePart);
@@ -163,19 +167,25 @@ public sealed class GoogleDriveBackupWorker : BackgroundService
 
     private async Task ApplyRetention(CancellationToken cancellationToken)
     {
+        var keepCount = GetInt("BACKUP_RETENTION_COUNT", 0);
         var retentionDays = GetInt("BACKUP_RETENTION_DAYS", 90);
-        if (retentionDays <= 0) return;
+        if (keepCount <= 0 && retentionDays <= 0) return;
         var token = await GetAccessToken(cancellationToken);
         var folder = GetRequired("BACKUP_GOOGLE_DRIVE_FOLDER_ID");
         var query = Uri.EscapeDataString($"'{folder}' in parents and trashed = false and name contains 'prestacontrol-backup-'");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"https://www.googleapis.com/drive/v3/files?q={query}&fields=files(id,name,createdTime)");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         using var document = JsonDocument.Parse(await (await _httpClientFactory.CreateClient().SendAsync(request, cancellationToken)).Content.ReadAsStringAsync(cancellationToken));
-        var cutoff = DateTimeOffset.UtcNow.AddDays(-retentionDays);
-        foreach (var file in document.RootElement.GetProperty("files").EnumerateArray())
+        var files = document.RootElement.GetProperty("files").EnumerateArray()
+            .Select(file => new { Element = file, CreatedAt = file.GetProperty("createdTime").GetDateTimeOffset() })
+            .OrderByDescending(file => file.CreatedAt)
+            .ToList();
+        var filesToDelete = keepCount > 0
+            ? files.Skip(keepCount)
+            : files.Where(file => file.CreatedAt < DateTimeOffset.UtcNow.AddDays(-retentionDays));
+        foreach (var file in filesToDelete)
         {
-            if (file.GetProperty("createdTime").GetDateTimeOffset() >= cutoff) continue;
-            using var delete = new HttpRequestMessage(HttpMethod.Delete, $"https://www.googleapis.com/drive/v3/files/{file.GetProperty("id").GetString()}");
+            using var delete = new HttpRequestMessage(HttpMethod.Delete, $"https://www.googleapis.com/drive/v3/files/{file.Element.GetProperty("id").GetString()}");
             delete.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             (await _httpClientFactory.CreateClient().SendAsync(delete, cancellationToken)).EnsureSuccessStatusCode();
         }

@@ -7,7 +7,9 @@ using Prestacontrol.Domain.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Security.Cryptography;
 using AutoMapper;
+using Prestacontrol.Application.Common;
 
 namespace Prestacontrol.Application.Services
 {
@@ -57,8 +59,15 @@ namespace Prestacontrol.Application.Services
         public async Task<LoginResponse?> LoginAsync(LoginRequest request)
         {
             var user = await _unitOfWork.Users.GetByUsernameAsync(request.Username);
-            if (user == null || !user.IsActive || user.PasswordHash != request.Password) // Simple check for demo, should be hashed
+            if (user == null || !user.IsActive || !PasswordHasher.Verify(request.Password, user.PasswordHash, out var needsMigration))
                 return null;
+
+            if (needsMigration)
+            {
+                user.PasswordHash = PasswordHasher.Hash(request.Password);
+                _unitOfWork.Users.Update(user);
+                await _unitOfWork.CompleteAsync();
+            }
 
             return new LoginResponse
             {
@@ -73,7 +82,7 @@ namespace Prestacontrol.Application.Services
             {
                 FullName = userDto.FullName,
                 Username = userDto.Username,
-                PasswordHash = password, // Should be hashed
+                PasswordHash = PasswordHasher.Hash(password),
                 Role = userDto.Role,
                 IsActive = true
             };
@@ -90,10 +99,9 @@ namespace Prestacontrol.Application.Services
             if (user == null) return false;
 
             // Generate a random 6-digit PIN
-            var random = new Random();
-            var newPassword = random.Next(100000, 999999).ToString();
+            var newPassword = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
             
-            user.PasswordHash = newPassword; // Simple for demo, should be hashed
+            user.PasswordHash = PasswordHasher.Hash(newPassword);
             _unitOfWork.Users.Update(user);
             await _unitOfWork.CompleteAsync();
 
@@ -127,10 +135,10 @@ namespace Prestacontrol.Application.Services
             var user = await _unitOfWork.Users.GetByIdAsync(userId);
             if (user == null) return false;
 
-            if (user.PasswordHash != request.CurrentPassword)
+            if (!PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash, out _))
                 throw new Exception("La contraseña actual es incorrecta.");
 
-            user.PasswordHash = request.NewPassword;
+            user.PasswordHash = PasswordHasher.Hash(request.NewPassword);
             _unitOfWork.Users.Update(user);
             await _unitOfWork.CompleteAsync();
             return true;

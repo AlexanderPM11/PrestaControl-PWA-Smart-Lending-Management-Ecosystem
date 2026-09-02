@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Prestacontrol.Domain.Entities;
 using Prestacontrol.Domain.Enums;
+using Prestacontrol.Application.Common;
 
 namespace Prestacontrol.Infrastructure.Persistence
 {
@@ -24,7 +25,7 @@ namespace Prestacontrol.Infrastructure.Persistence
                 {
                     FullName = "Administrador Sistema",
                     Username = "admin",
-                    PasswordHash = "admin123", // Using plain for demo as per current AuthService
+                    PasswordHash = PasswordHasher.Hash("admin123"),
                     Role = UserRole.Admin,
                     IsActive = true
                 };

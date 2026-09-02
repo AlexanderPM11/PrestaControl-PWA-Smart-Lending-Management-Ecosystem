@@ -130,7 +130,8 @@ public sealed class BackupsController : ControllerBase
     public async Task<IActionResult> Restore([FromForm] IFormFile? backup, CancellationToken cancellationToken)
     {
         if (backup == null || backup.Length == 0) return BadRequest(new { message = "Selecciona un archivo de backup." });
-        if (backup.Length > 1024L * 1024L * 1024L || !backup.FileName.EndsWith(".pca", StringComparison.OrdinalIgnoreCase))
+        var maxSize = GetLong("BACKUP_RESTORE_MAX_MB", 512) * 1024L * 1024L;
+        if (backup.Length > maxSize || !Path.GetFileName(backup.FileName).Equals(backup.FileName, StringComparison.Ordinal) || !backup.FileName.EndsWith(".pca", StringComparison.OrdinalIgnoreCase))
             return BadRequest(new { message = "El archivo debe ser un backup .pca válido de PrestaControl." });
 
         var temp = Path.Combine(Path.GetTempPath(), "prestacontrol-restore", Guid.NewGuid().ToString("N"));
@@ -141,7 +142,9 @@ public sealed class BackupsController : ControllerBase
         try
         {
             await using (var destination = System.IO.File.Create(encrypted)) await backup.CopyToAsync(destination, cancellationToken);
+            if (new FileInfo(encrypted).Length > maxSize) throw new InvalidOperationException("El backup supera el tamaño máximo permitido.");
             await DecryptFile(encrypted, archive, Get("BACKUP_ENCRYPTION_PASSWORD") ?? string.Empty, cancellationToken);
+            await ValidateArchive(archive, cancellationToken);
             await ExtractDatabaseDump(archive, dump, cancellationToken);
             await ImportDatabase(dump, cancellationToken);
             await _audit.RecordAsync(User, "Backups", "Restauró backup", "Backup", null, $"Archivo: {backup.FileName}");
@@ -201,6 +204,23 @@ public sealed class BackupsController : ControllerBase
         await using (var output = System.IO.File.Create(dump)) await process.StandardOutput.BaseStream.CopyToAsync(output, cancellationToken);
         var error = await process.StandardError.ReadToEndAsync(cancellationToken); await process.WaitForExitAsync(cancellationToken);
         if (process.ExitCode != 0) throw new InvalidOperationException($"El backup no contiene un volcado válido: {error}");
+        if (new FileInfo(dump).Length == 0) throw new InvalidOperationException("El backup no contiene información de base de datos.");
+    }
+
+    private static async Task ValidateArchive(string archive, CancellationToken cancellationToken)
+    {
+        var process = Process.Start(new ProcessStartInfo("tar", $"-tzf {Quote(archive)}")
+        { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true })
+            ?? throw new InvalidOperationException("No se pudo validar el archivo de backup.");
+        var entries = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var error = await process.StandardError.ReadToEndAsync(cancellationToken);
+        await process.WaitForExitAsync(cancellationToken);
+        if (process.ExitCode != 0) throw new InvalidOperationException($"El archivo de backup está dañado o no es válido: {error}");
+        if (entries.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(entry =>
+            entry.StartsWith("/", StringComparison.Ordinal) || entry.Contains("../", StringComparison.Ordinal) || entry.Contains("..\\", StringComparison.Ordinal)))
+            throw new InvalidOperationException("El backup contiene rutas no permitidas.");
+        if (!entries.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(entry => entry.TrimEnd('\r') == "database.sql"))
+            throw new InvalidOperationException("El backup no contiene el archivo de base de datos requerido.");
     }
 
     private async Task ImportDatabase(string dump, CancellationToken cancellationToken)
@@ -220,6 +240,7 @@ public sealed class BackupsController : ControllerBase
     }
 
     private static string Quote(string value) => $"\"{value.Replace("\"", "\\\"")}\"";
+    private long GetLong(string name, long fallback) => long.TryParse(Get(name, fallback.ToString()), out var value) && value > 0 ? value : fallback;
 }
 
 public sealed class BackupSettingsRequest

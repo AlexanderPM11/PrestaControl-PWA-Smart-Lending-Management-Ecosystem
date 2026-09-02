@@ -6,6 +6,7 @@ using Prestacontrol.Domain.Enums;
 using Prestacontrol.Domain.Interfaces;
 using System.Security.Claims;
 using Prestacontrol.API.Services;
+using Prestacontrol.Application.Common;
 
 namespace Prestacontrol.API.Controllers;
 
@@ -40,7 +41,7 @@ public class UsersController : ControllerBase
         {
             FullName = request.FullName.Trim(),
             Username = username,
-            PasswordHash = request.Password,
+            PasswordHash = PasswordHasher.Hash(request.Password),
             Role = request.Role,
             IsActive = true
         };
@@ -78,7 +79,7 @@ public class UsersController : ControllerBase
         user.Username = username;
         user.Role = request.Role;
         user.IsActive = request.IsActive;
-        if (!string.IsNullOrWhiteSpace(request.Password)) user.PasswordHash = request.Password;
+        if (!string.IsNullOrWhiteSpace(request.Password)) user.PasswordHash = PasswordHasher.Hash(request.Password);
         user.UpdatedAt = DateTime.UtcNow;
         _unitOfWork.Users.Update(user);
         await _unitOfWork.CompleteAsync();
