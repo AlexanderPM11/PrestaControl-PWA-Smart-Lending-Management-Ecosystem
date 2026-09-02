@@ -33,23 +33,30 @@ namespace Prestacontrol.Infrastructure.Persistence
             // background workers start querying it.
             await EnsureSystemConfigSchema(context);
             await EnsureUsersSchema(context);
+
+            // The administrator is a core bootstrap dependency. Create it
+            // before optional compatibility repairs so a failure in a legacy
+            // table repair cannot leave the application without an owner.
+            await SeedInitialAdmin(context);
+
             await EnsureClientsSchema(context);
+        }
 
-            // Seed initial data
-            if (!await context.Users.AnyAsync())
+        private static async Task SeedInitialAdmin(ApplicationDbContext context)
+        {
+            if (await context.Users.AnyAsync()) return;
+
+            var admin = new User
             {
-                var admin = new User
-                {
-                    FullName = "Administrador Sistema",
-                    Username = "admin",
-                    PasswordHash = PasswordHasher.Hash("admin123"),
-                    Role = UserRole.Admin,
-                    IsActive = true
-                };
+                FullName = "Administrador Sistema",
+                Username = "admin",
+                PasswordHash = PasswordHasher.Hash("admin123"),
+                Role = UserRole.Admin,
+                IsActive = true
+            };
 
-                await context.Users.AddAsync(admin);
-                await context.SaveChangesAsync();
-            }
+            await context.Users.AddAsync(admin);
+            await context.SaveChangesAsync();
         }
 
         private static async Task EnsureAuditSchema(ApplicationDbContext context)
